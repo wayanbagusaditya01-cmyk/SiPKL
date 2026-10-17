@@ -112,7 +112,7 @@ const mentorType = one('form [name="type"]');
 if (mentorType) {
     function updateMentorType() {
         const industrial = mentorType.value === 'Industri';
-        ['place','position','phone'].forEach(name => { const input = one(`[name="${name}"]`); if(input) { input.required = industrial; if(name !== 'phone') { input.closest('.field').hidden = !industrial; input.disabled = !industrial; } } });
+        ['place','place_id','position','phone'].forEach(name => { const input = one(`[name="${name}"]`); if(input) { input.required = industrial; if(name !== 'phone') { input.closest('.field').hidden = !industrial; input.disabled = !industrial; } } });
         const nip = one('[name="nip"]'); if(nip) { nip.closest('.field').hidden = industrial; nip.disabled = industrial; }
     }
     mentorType.addEventListener('change',updateMentorType); updateMentorType();

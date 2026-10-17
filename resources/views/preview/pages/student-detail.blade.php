@@ -1,4 +1,13 @@
 <x-page-heading :title="$identity['menus'][$page]" description="Informasi PKL yang terhubung ke siswa dalam pratinjau ini."/>
+@if($role === 'siswa' && $studentProfile && in_array($page, ['penempatan', 'tempat-pkl']))
+    @if(!$realPlacement)
+        <section class="panel"><x-empty title="Penempatan belum ditetapkan" description="Koordinator PKL belum menetapkan tempat untuk profilmu."/></section>
+    @elseif($page === 'tempat-pkl')
+        <section class="panel form-width"><span class="round-icon"><x-icon name="place"/></span><h2>{{ $realPlacement->place->name }}</h2><dl><dt>Alamat</dt><dd>{{ $realPlacement->place->address ?: 'Belum dicatat' }}</dd><dt>Kontak</dt><dd>{{ $realPlacement->place->contact ?: 'Belum dicatat' }}</dd><dt>Email</dt><dd>{{ $realPlacement->place->email ?: 'Belum dicatat' }}</dd></dl></section>
+    @else
+        <section class="panel form-width"><div class="section-heading"><h2>{{ $realPlacement->place->name }}</h2><x-badge :status="$realPlacement->status"/></div><dl><dt>Tanggal penempatan</dt><dd>{{ $realPlacement->placed_at?->format('d-m-Y') ?? 'Belum dicatat' }}</dd><dt>Alamat</dt><dd>{{ $realPlacement->place->address ?: 'Belum dicatat' }}</dd></dl><div class="actions"><x-button :href="$link('tempat-pkl')">Buka detail tempat</x-button></div></section>
+    @endif
+@else
 @if(!$placement)
 <section class="panel"><x-empty title="Penempatan belum tersedia" description="Penempatan ditentukan Koordinator PKL. Informasi tempat, pembina, dan nilai akan tersedia setelah penempatan ditetapkan."/></section>
 @else
@@ -16,3 +25,4 @@
 @endif
 @endif
 <a class="scenario-link" href="{{ $link($page, ['state' => 'unplaced']) }}">Periksa keadaan belum ada penempatan</a>
+@endif

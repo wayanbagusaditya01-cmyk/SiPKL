@@ -3,15 +3,57 @@
 @section('body')
 @php
     $navIcons = ['dashboard' => 'dashboard', 'akun' => 'users', 'hak-akses' => 'lock', 'log-aktivitas' => 'file', 'master-data' => 'place', 'laporan' => 'file', 'profil' => 'user', 'siswa' => 'users', 'tempat' => 'place', 'tempat-pkl' => 'place', 'pembina' => 'users', 'periode' => 'calendar', 'penempatan' => 'place', 'absensi' => 'calendar', 'jurnal' => 'book', 'penilaian' => 'grade', 'nilai' => 'grade'];
-    $person = $data['profiles'][$role]['name'] ?? $identity['person'];
+    $person = auth()->user()->name;
+    $initials = collect(explode(' ', trim($person)))->filter()->take(2)->map(fn ($part) => mb_strtoupper(mb_substr($part, 0, 1)))->implode('');
     $lookup = fn ($key, $id) => collect($data[$key])->firstWhere('id', $id);
-    $link = fn ($target, $params = []) => route('preview.page', [$role, $target]) . ($params ? '?'.http_build_query($params) : '');
+    $link = function ($target, $params = []) use ($role) {
+        if ($role === 'siswa' && auth()->user()->student()->exists()) {
+            return match($target) {
+                'dashboard' => route('student.portal.dashboard'),
+                'penempatan' => route('student.portal.placement'),
+                'tempat-pkl' => route('student.portal.place'),
+                'pembina' => route('student.portal.mentors'),
+                'absensi' => route('student.attendance.index'),
+                'jurnal' => route('student.journals.index'),
+                'nilai' => route('student.portal.grade'),
+                'notifikasi' => route('student.notifications.index'),
+                'profil' => route('student.profile.edit'),
+                default => route('student.portal.dashboard'),
+            }.($params ? '?'.http_build_query($params) : '');
+        }
+
+        if ($role === 'admin' && $target === 'akun') {
+            return route('admin.accounts.index').($params ? '?'.http_build_query($params) : '');
+        }
+
+        if ($role === 'koordinator' && $target === 'siswa') {
+            return route('coordinator.siswa.index').($params ? '?'.http_build_query($params) : '');
+        }
+
+        if ($role === 'koordinator' && $target === 'tempat') {
+            return route('coordinator.tempat.index').($params ? '?'.http_build_query($params) : '');
+        }
+
+        if ($role === 'koordinator' && $target === 'penempatan') {
+            return route('coordinator.penempatan.index').($params ? '?'.http_build_query($params) : '');
+        }
+
+        if ($role === 'koordinator' && $target === 'pembina') {
+            return route('coordinator.pembina.index').($params ? '?'.http_build_query($params) : '');
+        }
+
+        if ($role === 'koordinator' && $target === 'periode') {
+            return route('coordinator.periode.index').($params ? '?'.http_build_query($params) : '');
+        }
+
+        return route('preview.page', [$role, $target]).($params ? '?'.http_build_query($params) : '');
+    };
 @endphp
 <div class="app-shell">
-    <aside class="sidebar" id="sidebar" aria-label="Navigasi {{ $identity['name'] }}"><div class="sidebar-head"><a class="brand" href="{{ $link('dashboard') }}"><x-icon name="book"/>SIPKL</a><button type="button" class="icon-button sidebar-close" data-close-sidebar aria-label="Tutup navigasi"><x-icon name="close"/></button></div><p class="brand-description">Sistem Informasi<br>Praktik Kerja Lapangan</p><div class="role-label">{{ $identity['name'] }}</div><nav aria-label="Menu utama"><p class="nav-label">MENU UTAMA</p>@foreach($identity['menus'] as $key => $label)<a href="{{ $link($key) }}" @if($page === $key) aria-current="page" @endif><x-icon :name="$navIcons[$key]"/><span>{{ $label }}</span></a>@endforeach</nav><div class="sidebar-bottom"><div class="sidebar-profile"><span class="avatar">{{ $identity['initials'] }}</span><div><strong>{{ $person }}</strong><small>{{ $role === 'pembina' ? 'Pembina Sekolah' : $identity['name'] }}</small></div></div><a href="{{ route('login') }}" class="logout"><x-icon name="logout"/>Keluar pratinjau</a></div></aside>
+    <aside class="sidebar" id="sidebar" aria-label="Navigasi {{ $identity['name'] }}"><div class="sidebar-head"><a class="brand" href="{{ $link('dashboard') }}"><x-icon name="book"/>SIPKL</a><button type="button" class="icon-button sidebar-close" data-close-sidebar aria-label="Tutup navigasi"><x-icon name="close"/></button></div><p class="brand-description">Sistem Informasi<br>Praktik Kerja Lapangan</p><div class="role-label">{{ $identity['name'] }}</div><nav aria-label="Menu utama"><p class="nav-label">MENU UTAMA</p>@foreach($identity['menus'] as $key => $label)<a href="{{ $link($key) }}" @if($page === $key) aria-current="page" @endif><x-icon :name="$navIcons[$key]"/><span>{{ $label }}</span></a>@endforeach</nav><div class="sidebar-bottom"><div class="sidebar-profile"><span class="avatar">{{ $initials }}</span><div><strong>{{ $person }}</strong><small>{{ $role === 'pembina' ? 'Pembina Sekolah' : $identity['name'] }}</small></div></div><form method="POST" action="{{ route('logout') }}">@csrf<button type="submit" class="logout"><x-icon name="logout"/>Keluar</button></form></div></aside>
     <div class="sidebar-overlay" data-close-sidebar hidden></div>
-    <div class="app-main"><header class="topbar"><div class="topbar-left"><button type="button" class="icon-button menu-trigger" id="menu-trigger" aria-controls="sidebar" aria-expanded="false" aria-label="Buka navigasi"><x-icon name="menu"/></button><span class="breadcrumb"><strong>SIPKL</strong><span>/</span>{{ $identity['menus'][$page] }}</span></div><div class="topbar-person"><span>{{ $person }}</span><span class="avatar">{{ $identity['initials'] }}</span></div></header>
-    <main id="main" class="workspace"><div class="preview-bar"><span>Pratinjau antarmuka · Data contoh</span><div><a href="{{ route('login') }}">Ganti peran</a><button type="button" class="text-button" data-dialog="about-dialog">Tentang pratinjau</button></div></div>
+    <div class="app-main"><header class="topbar"><div class="topbar-left"><button type="button" class="icon-button menu-trigger" id="menu-trigger" aria-controls="sidebar" aria-expanded="false" aria-label="Buka navigasi"><x-icon name="menu"/></button><span class="breadcrumb"><strong>SIPKL</strong><span>/</span>{{ $identity['menus'][$page] }}</span></div><div class="topbar-person"><span>{{ $person }}</span><span class="avatar">{{ $initials }}</span></div></header>
+    <main id="main" class="workspace"><div class="preview-bar"><span>Pratinjau antarmuka · Data contoh</span><div><button type="button" class="text-button" data-dialog="about-dialog">Tentang pratinjau</button></div></div>
     @if(session('success'))<x-alert type="success">{{ session('success') }}</x-alert>@endif
     @if($errors->any())<x-alert type="error"><strong>Periksa masukanmu.</strong><ul>@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></x-alert>@endif
     @if($page === 'dashboard') @include('preview.pages.dashboard')

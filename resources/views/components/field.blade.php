@@ -8,6 +8,8 @@
     </select>
     @elseif($type === 'textarea')
     <textarea id="field-{{ $name }}" name="{{ $name }}" rows="5" {{ $attributes }} @required($required) @if($errors->has($name)) aria-invalid="true" aria-describedby="error-{{ $name }}" @endif>{{ old($name, $value) }}</textarea>
+    @elseif($type === 'file')
+    <input id="field-{{ $name }}" name="{{ $name }}" type="file" {{ $attributes }} @required($required) @if($errors->has($name)) aria-invalid="true" aria-describedby="error-{{ $name }}" @endif>
     @else
     <input id="field-{{ $name }}" name="{{ $name }}" type="{{ $type }}" value="{{ old($name, $value) }}" {{ $attributes }} @required($required) @if($errors->has($name)) aria-invalid="true" aria-describedby="error-{{ $name }}" @endif>
     @endif

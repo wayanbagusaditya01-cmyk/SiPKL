@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Placement;
+use App\Models\Student;
 use App\Support\PreviewCatalog;
 use App\Support\PreviewData;
 use Illuminate\Http\Request;
@@ -40,7 +42,33 @@ class PreviewController extends Controller
     public function show(Request $request, string $role, string $page = 'dashboard')
     {
         [$roles, $identity] = $this->context($role, $page);
+        if ($role === 'siswa' && $request->user()->student()->exists()) {
+            return redirect()->route($this->studentRoute($page));
+        }
+
         $data = $this->data($request);
+        $studentProfile = $role === 'siswa'
+            ? $request->user()->student()->with('placement.place')->first()
+            : null;
+        $realPlacement = $studentProfile?->placement;
+        $coordinatorStudents = collect();
+        $coordinatorUnplacedStudents = collect();
+        $coordinatorPlacements = collect();
+
+        if ($role === 'koordinator') {
+            $coordinatorStudents = Student::query()
+                ->with(['placement.place', 'placement.period', 'placement.schoolMentor.user', 'placement.industryMentor.user'])
+                ->orderBy('name')
+                ->orderBy('id')
+                ->get();
+            $coordinatorUnplacedStudents = $coordinatorStudents->filter(fn (Student $student): bool => $student->placement === null)->values();
+            $coordinatorPlacements = $coordinatorStudents
+                ->map(fn (Student $student): ?Placement => $student->placement)
+                ->filter()
+                ->sortByDesc('placed_at')
+                ->values();
+        }
+
         $forms = PreviewCatalog::forms($data);
         $table = PreviewCatalog::table($role, $page, $data);
         $q = trim((string) $request->query('q', ''));
@@ -92,7 +120,21 @@ class PreviewController extends Controller
             }
         }
 
-        return view('preview.app', compact('roles', 'identity', 'role', 'page', 'data', 'table', 'q', 'filter', 'statuses', 'count', 'current', 'record', 'placement', 'journals', 'selected', 'form'));
+        return view('preview.app', compact('roles', 'identity', 'role', 'page', 'data', 'table', 'q', 'filter', 'statuses', 'count', 'current', 'record', 'placement', 'realPlacement', 'studentProfile', 'coordinatorStudents', 'coordinatorUnplacedStudents', 'coordinatorPlacements', 'journals', 'selected', 'form'));
+    }
+
+    private function studentRoute(string $page): string
+    {
+        return match ($page) {
+            'dashboard' => 'student.portal.dashboard',
+            'penempatan' => 'student.portal.placement',
+            'tempat-pkl' => 'student.portal.place',
+            'pembina' => 'student.portal.mentors',
+            'absensi' => 'student.attendance.index',
+            'jurnal' => 'student.journals.index',
+            'nilai' => 'student.portal.grade',
+            default => abort(404),
+        };
     }
 
     private function invalid(string $field, string $message): never
@@ -113,6 +155,10 @@ class PreviewController extends Controller
     public function action(Request $request, string $role, string $page)
     {
         $this->context($role, $page);
+        if ($role === 'siswa' && $request->user()->student()->exists()) {
+            abort(403);
+        }
+
         $data = $this->data($request);
         $action = $request->string('action')->toString();
         $message = 'Perubahan data contoh berhasil. Hanya berlaku dalam sesi pratinjau ini.';

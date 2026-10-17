@@ -43,13 +43,14 @@
                         <div class="mt-3"><x-alert>{{ session('success') }}</x-alert></div>
                     @endif
 
-                    <form id="login-form" method="POST" action="#" novalidate class="mt-5">
+                    <form id="login-form" method="POST" action="{{ route('login.store') }}" class="mt-5">
                         @csrf
 
                         <div>
                             <label for="email" class="mb-1 block text-sm font-medium text-slate-900">Email</label>
-                            <input id="email" name="email" type="email" required autocomplete="username" placeholder="nama@sekolah.sch.id"
+                            <input id="email" name="email" type="email" value="{{ old('email') }}" required autocomplete="username" placeholder="nama@sekolah.sch.id"
                                    class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/30">
+                            @error('email')<p role="alert" class="mt-1 text-xs text-red-700">{{ $message }}</p>@enderror
                         </div>
 
                         <div class="mt-3">
@@ -62,9 +63,8 @@
                                     Tampilkan
                                 </button>
                             </div>
+                            @error('password')<p role="alert" class="mt-1 text-xs text-red-700">{{ $message }}</p>@enderror
                         </div>
-
-                        <p id="login-message" role="alert" hidden class="mt-3 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700"></p>
 
                         <x-button type="submit" class="mt-5 w-full">Masuk</x-button>
                     </form>
@@ -86,20 +86,6 @@
         toggle.textContent = show ? 'Sembunyikan' : 'Tampilkan';
     });
 
-    const form = document.getElementById('login-form');
-    const msg = document.getElementById('login-message');
-    form.addEventListener('submit', e => {
-        e.preventDefault(); // hapus baris ini kalau autentikasi Laravel sudah dibuat
-        const email = form.email.value.trim();
-        if (!email || !form.password.value) {
-            msg.textContent = 'Email dan kata sandi wajib diisi.';
-        } else if (!/^\S+@\S+\.\S+$/.test(email)) {
-            msg.textContent = 'Format email tidak valid.';
-        } else {
-            msg.textContent = 'Autentikasi belum terhubung.';
-        }
-        msg.hidden = false;
-    });
 })();
 </script>
 @endsection
