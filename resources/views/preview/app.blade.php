@@ -22,8 +22,17 @@
             }.($params ? '?'.http_build_query($params) : '');
         }
 
-        if ($role === 'admin' && $target === 'akun') {
-            return route('admin.accounts.index').($params ? '?'.http_build_query($params) : '');
+        if ($role === 'admin') {
+            return match($target) {
+                'dashboard' => route('admin.dashboard'),
+                'akun' => route('admin.accounts.index'),
+                'hak-akses' => route('admin.permissions.index'),
+                'log-aktivitas' => route('admin.logs.index'),
+                'master-data' => route('admin.master-data.index'),
+                'laporan' => route('admin.reports.index'),
+                'profil' => route('admin.profile.edit'),
+                default => route('admin.dashboard'),
+            }.($params ? '?'.http_build_query($params) : '');
         }
 
         if ($role === 'koordinator' && $target === 'siswa') {

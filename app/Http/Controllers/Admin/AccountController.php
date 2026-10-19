@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\ActivityLog;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -23,11 +24,13 @@ class AccountController extends Controller
         ]);
 
         $users = User::query()
-            ->select(['id', 'name', 'email', 'role', 'status', 'created_at'])
+            ->select(['id', 'name', 'email', 'phone', 'role', 'status', 'created_at'])
+            ->with(['student', 'mentor.place'])
             ->when($filters['q'] ?? null, function (Builder $query, string $search): void {
                 $query->where(function (Builder $query) use ($search): void {
                     $query->where('name', 'like', '%'.$search.'%')
-                        ->orWhere('email', 'like', '%'.$search.'%');
+                        ->orWhere('email', 'like', '%'.$search.'%')
+                        ->orWhere('phone', 'like', '%'.$search.'%');
                 });
             })
             ->when($filters['role'] ?? null, fn (Builder $query, string $role): Builder => $query->where('role', $role))
@@ -44,6 +47,16 @@ class AccountController extends Controller
         ]);
     }
 
+    public function show(User $account): View
+    {
+        $account->load(['student.placement.place', 'mentor.place', 'activityLogs' => fn ($q) => $q->take(10)]);
+
+        return view('admin.accounts.show', [
+            'account' => $account,
+            'roles' => config('preview.roles'),
+        ]);
+    }
+
     public function create(): View
     {
         return view('admin.accounts.form', [
@@ -57,6 +70,7 @@ class AccountController extends Controller
         $values = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')],
+            'phone' => ['nullable', 'string', 'max:32'],
             'password' => ['required', 'string', 'min:12', 'confirmed'],
             'role' => ['required', Rule::in(array_keys(config('preview.roles')))],
             'status' => ['required', 'boolean'],
@@ -65,6 +79,7 @@ class AccountController extends Controller
         $user = User::create([
             'name' => $values['name'],
             'email' => Str::lower(trim($values['email'])),
+            'phone' => ! empty($values['phone']) ? trim($values['phone']) : null,
             'password' => $values['password'],
             'role' => $values['role'],
             'status' => $request->boolean('status'),
@@ -73,6 +88,13 @@ class AccountController extends Controller
         if ($user->role === 'siswa') {
             $user->ensureStudent();
         }
+
+        ActivityLog::record(
+            'Buat Akun',
+            "Akun ({$user->email})",
+            "Membuat akun baru {$user->name} dengan peran {$user->role} dan status ".($user->status ? 'Aktif' : 'Nonaktif'),
+            $request->user()
+        );
 
         return redirect()->route('admin.accounts.index')->with('success', 'Akun berhasil dibuat.');
     }
@@ -90,6 +112,7 @@ class AccountController extends Controller
         $values = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($account->id)],
+            'phone' => ['nullable', 'string', 'max:32'],
             'password' => ['nullable', 'string', 'min:12', 'confirmed'],
             'role' => ['required', Rule::in(array_keys(config('preview.roles')))],
             'status' => ['required', 'boolean'],
@@ -105,6 +128,7 @@ class AccountController extends Controller
         $account->fill([
             'name' => $values['name'],
             'email' => Str::lower(trim($values['email'])),
+            'phone' => array_key_exists('phone', $values) ? ($values['phone'] ? trim($values['phone']) : null) : $account->phone,
             'role' => $values['role'],
             'status' => $request->boolean('status'),
         ]);
@@ -119,6 +143,85 @@ class AccountController extends Controller
             $account->ensureStudent();
         }
 
+        ActivityLog::record(
+            'Ubah Akun',
+            "Akun ({$account->email})",
+            "Memperbarui akun {$account->name} (Peran: {$account->role}, Status: ".($account->status ? 'Aktif' : 'Nonaktif').')',
+            $request->user()
+        );
+
         return redirect()->route('admin.accounts.index')->with('success', 'Akun berhasil diperbarui.');
+    }
+
+    public function toggleStatus(Request $request, User $account): RedirectResponse
+    {
+        if ($account->is($request->user())) {
+            return back()->withErrors([
+                'error' => 'Akun admin yang sedang digunakan tidak dapat dinonaktifkan.',
+            ]);
+        }
+
+        $newStatus = ! $account->status;
+        $account->update(['status' => $newStatus]);
+
+        ActivityLog::record(
+            $newStatus ? 'Aktivasi Akun' : 'Nonaktivasi Akun',
+            "Akun ({$account->email})",
+            "Mengubah status akun {$account->name} menjadi ".($newStatus ? 'Aktif' : 'Nonaktif'),
+            $request->user()
+        );
+
+        return back()->with('success', 'Status akun berhasil diubah menjadi '.($newStatus ? 'Aktif' : 'Nonaktif').'.');
+    }
+
+    public function resetPassword(Request $request, User $account): RedirectResponse
+    {
+        $request->validate([
+            'password' => ['required', 'string', 'min:12', 'confirmed'],
+        ]);
+
+        $account->update([
+            'password' => $request->string('password'),
+        ]);
+
+        ActivityLog::record(
+            'Reset Kata Sandi',
+            "Akun ({$account->email})",
+            "Mereset kata sandi akun {$account->name}",
+            $request->user()
+        );
+
+        return back()->with('success', 'Kata sandi akun '.$account->name.' berhasil direset.');
+    }
+
+    public function destroy(Request $request, User $account): RedirectResponse
+    {
+        if ($account->is($request->user())) {
+            return back()->withErrors([
+                'error' => 'Akun admin yang sedang digunakan tidak dapat dihapus.',
+            ]);
+        }
+
+        $name = $account->name;
+        $email = $account->email;
+
+        // If user has linked student or mentor, decouple user_id to prevent orphaned delete constraint errors
+        if ($account->student) {
+            $account->student->update(['user_id' => null]);
+        }
+        if ($account->mentor) {
+            $account->mentor->update(['user_id' => null]);
+        }
+
+        $account->delete();
+
+        ActivityLog::record(
+            'Hapus Akun',
+            "Akun ({$email})",
+            "Menghapus akun {$name} ({$email})",
+            $request->user()
+        );
+
+        return redirect()->route('admin.accounts.index')->with('success', 'Akun '.$name.' berhasil dihapus.');
     }
 }

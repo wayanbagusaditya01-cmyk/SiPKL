@@ -14,8 +14,13 @@
         $isStudentPortal = request()->routeIs('student.*');
         $portalRole = $isAdminPortal ? 'Admin' : ($isStudentPortal ? 'Siswa' : 'Koordinator PKL');
         $portalNavigation = $isAdminPortal ? [
-            ['label' => 'Ringkasan', 'url' => route('preview.page', ['role' => 'admin', 'page' => 'dashboard']), 'icon' => 'dashboard', 'active' => false],
+            ['label' => 'Ringkasan', 'url' => route('admin.dashboard'), 'icon' => 'dashboard', 'active' => request()->routeIs('admin.dashboard')],
             ['label' => 'Akun Pengguna', 'url' => route('admin.accounts.index'), 'icon' => 'users', 'active' => request()->routeIs('admin.accounts.*')],
+            ['label' => 'Hak Akses', 'url' => route('admin.permissions.index'), 'icon' => 'lock', 'active' => request()->routeIs('admin.permissions.*')],
+            ['label' => 'Log Aktivitas', 'url' => route('admin.logs.index'), 'icon' => 'file', 'active' => request()->routeIs('admin.logs.*')],
+            ['label' => 'Master Data', 'url' => route('admin.master-data.index'), 'icon' => 'place', 'active' => request()->routeIs('admin.master-data.*')],
+            ['label' => 'Laporan Sistem', 'url' => route('admin.reports.index'), 'icon' => 'file', 'active' => request()->routeIs('admin.reports.*')],
+            ['label' => 'Profil Admin', 'url' => route('admin.profile.edit'), 'icon' => 'user', 'active' => request()->routeIs('admin.profile.*')],
         ] : ($isStudentPortal ? [
             ['label' => 'Ringkasan', 'url' => route('student.portal.dashboard'), 'icon' => 'dashboard', 'active' => request()->routeIs('student.portal.dashboard')],
             ['label' => 'Penempatan Saya', 'url' => route('student.portal.placement'), 'icon' => 'place', 'active' => request()->routeIs('student.portal.placement')],

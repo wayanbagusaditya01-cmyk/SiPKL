@@ -1,6 +1,12 @@
 <?php
 
 use App\Http\Controllers\Admin\AccountController;
+use App\Http\Controllers\Admin\ActivityLogController;
+use App\Http\Controllers\Admin\AdminDashboardController;
+use App\Http\Controllers\Admin\AdminProfileController;
+use App\Http\Controllers\Admin\MasterDataController;
+use App\Http\Controllers\Admin\PermissionController;
+use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Coordinator\CoordinatorDashboardController;
 use App\Http\Controllers\Coordinator\MentorController;
@@ -30,7 +36,30 @@ Route::middleware(['auth', EnsurePreviewRole::class])->group(function () {
 });
 
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function (): void {
-    Route::resource('accounts', AccountController::class)->except(['show', 'destroy']);
+    Route::get('/', fn () => redirect()->route('admin.dashboard'));
+    Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+
+    Route::resource('accounts', AccountController::class);
+    Route::post('/accounts/{account}/toggle-status', [AccountController::class, 'toggleStatus'])->name('accounts.toggle-status');
+    Route::post('/accounts/{account}/reset-password', [AccountController::class, 'resetPassword'])->name('accounts.reset-password');
+
+    Route::get('/hak-akses', [PermissionController::class, 'index'])->name('permissions.index');
+    Route::put('/hak-akses', [PermissionController::class, 'update'])->name('permissions.update');
+
+    Route::get('/log-aktivitas', [ActivityLogController::class, 'index'])->name('logs.index');
+    Route::delete('/log-aktivitas/clear', [ActivityLogController::class, 'clear'])->name('logs.clear');
+
+    Route::get('/master-data', [MasterDataController::class, 'index'])->name('master-data.index');
+    Route::post('/master-data', [MasterDataController::class, 'store'])->name('master-data.store');
+    Route::put('/master-data/{reference}', [MasterDataController::class, 'update'])->name('master-data.update');
+    Route::delete('/master-data/{reference}', [MasterDataController::class, 'destroy'])->name('master-data.destroy');
+
+    Route::get('/laporan', [ReportController::class, 'index'])->name('reports.index');
+    Route::get('/laporan/export-csv', [ReportController::class, 'exportCsv'])->name('reports.export-csv');
+
+    Route::get('/profil', [AdminProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('/profil', [AdminProfileController::class, 'update'])->name('profile.update');
+    Route::put('/profil/password', [AdminProfileController::class, 'updatePassword'])->name('profile.password');
 });
 
 Route::middleware(['auth', 'role:koordinator'])->prefix('koordinator')->name('coordinator.')->group(function (): void {

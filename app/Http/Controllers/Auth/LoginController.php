@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\ActivityLog;
 use App\Models\Student;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
@@ -17,6 +18,10 @@ class LoginController extends Controller
     {
         if (Auth::check() && config('preview.enabled') && app()->environment(['local', 'testing'])) {
             $user = Auth::user();
+
+            if ($user instanceof User && $user->role === 'admin') {
+                return redirect()->route('admin.dashboard');
+            }
 
             if ($user instanceof User && $user->role === 'siswa' && $user->student()->exists()) {
                 return redirect()->route('student.portal.dashboard');
@@ -60,6 +65,17 @@ class LoginController extends Controller
             ])->onlyInput('email');
         }
 
+        ActivityLog::record(
+            'Login',
+            'Sesi Pengguna',
+            "Pengguna {$user->name} ({$user->email}) berhasil masuk ke sistem",
+            $user
+        );
+
+        if ($user->role === 'admin') {
+            return redirect()->route('admin.dashboard');
+        }
+
         if ($user->role === 'siswa') {
             if (! $user->student()->exists()) {
                 $existing = Student::whereNull('user_id')
@@ -88,6 +104,16 @@ class LoginController extends Controller
 
     public function destroy(Request $request): RedirectResponse
     {
+        $user = Auth::user();
+        if ($user) {
+            ActivityLog::record(
+                'Logout',
+                'Sesi Pengguna',
+                "Pengguna {$user->name} ({$user->email}) keluar dari sistem",
+                $user
+            );
+        }
+
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
