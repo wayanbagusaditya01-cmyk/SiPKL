@@ -22,7 +22,13 @@ class PreviewCatalog
 
     public static function table(string $role, string $page, array $data): array
     {
-        $student = fn ($id) => collect($data['students'])->firstWhere('id', $id)['name'] ?? 'Tidak tersedia';
+        $student = function ($id) use ($data, $role) {
+            if ($role === 'siswa' && $id === 1 && auth()->check()) {
+                return auth()->user()->name;
+            }
+
+            return collect($data['students'])->firstWhere('id', $id)['name'] ?? 'Tidak tersedia';
+        };
         $place = fn ($id) => collect($data['places'])->firstWhere('id', $id)['name'] ?? 'Belum ditempatkan';
         $status = fn ($id) => collect($data['placements'])->contains('student', $id) ? 'Ditempatkan' : 'Belum ditempatkan';
         $scope = fn ($row) => $role === 'siswa' ? $row['student'] === 1 : ($role !== 'pembina' || collect($data['placements'])->contains(fn ($p) => $p['student'] === $row['student'] && $p['school'] === 5));

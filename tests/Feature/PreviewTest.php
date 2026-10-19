@@ -221,4 +221,55 @@ class PreviewTest extends TestCase
         $this->get('/preview/pembina/jurnal')->assertDontSee('Draf pribadi contoh');
         $this->get('/preview/pembina/jurnal?journal=5')->assertNotFound();
     }
+
+    public function test_student_preview_displays_logged_in_student_name_instead_of_default_preview_name(): void
+    {
+        $studentUser = User::factory()->create([
+            'name' => 'Henkun Siswa',
+            'email' => 'henkun@sekolah.test',
+            'role' => 'siswa',
+        ]);
+
+        $this->actingAs($studentUser)
+            ->get('/preview/siswa/absensi')
+            ->assertOk()
+            ->assertSee('Henkun Siswa')
+            ->assertDontSee('Aditya Pratama');
+
+        $this->get('/preview/siswa/jurnal')
+            ->assertOk()
+            ->assertSee('Henkun Siswa')
+            ->assertDontSee('Aditya Pratama');
+
+        $this->post('/preview/siswa/absensi', [
+            'action' => 'attendance',
+            'date' => '2026-10-08',
+            'status' => 'Hadir',
+            'in' => '08:00',
+            'out' => '16:00',
+            'note' => 'Hadir tepat waktu',
+        ])->assertRedirect('/preview/siswa/absensi');
+
+        $this->get('/preview/siswa/absensi')
+            ->assertOk()
+            ->assertSee('Henkun Siswa');
+    }
+
+    public function test_unlinked_student_can_activate_portal_from_preview(): void
+    {
+        $studentUser = User::factory()->create([
+            'name' => 'Henkun Siswa',
+            'email' => 'henkun.aktif@sekolah.test',
+            'role' => 'siswa',
+        ]);
+
+        $this->assertFalse($studentUser->student()->exists());
+
+        $this->actingAs($studentUser)
+            ->post(route('preview.siswa.activate', ['role' => 'siswa']))
+            ->assertRedirect(route('student.portal.dashboard'));
+
+        $this->assertTrue($studentUser->fresh()->student()->exists());
+        $this->assertTrue($studentUser->fresh()->student->placement()->exists());
+    }
 }

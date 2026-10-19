@@ -54,6 +54,18 @@
     <div class="sidebar-overlay" data-close-sidebar hidden></div>
     <div class="app-main"><header class="topbar"><div class="topbar-left"><button type="button" class="icon-button menu-trigger" id="menu-trigger" aria-controls="sidebar" aria-expanded="false" aria-label="Buka navigasi"><x-icon name="menu"/></button><span class="breadcrumb"><strong>SIPKL</strong><span>/</span>{{ $identity['menus'][$page] }}</span></div><div class="topbar-person"><span>{{ $person }}</span><span class="avatar">{{ $initials }}</span></div></header>
     <main id="main" class="workspace"><div class="preview-bar"><span>Pratinjau antarmuka · Data contoh</span><div><button type="button" class="text-button" data-dialog="about-dialog">Tentang pratinjau</button></div></div>
+    @if($role === 'siswa' && !auth()->user()->student()->exists())
+        <div class="panel" style="margin-bottom: 20px; border-left: 4px solid var(--primary); display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;">
+            <div>
+                <h3 style="margin: 0 0 4px 0; font-size: 15px;">Akun Siswa Belum Terhubung ke Database Portal</h3>
+                <p style="margin: 0; font-size: 13px; color: var(--muted, #64748b);">Saat ini kamu masih menggunakan mode pratinjau dengan data simulasi. Aktifkan portal siswa untuk menyimpan absensi dan jurnal asli ke database.</p>
+            </div>
+            <form method="POST" action="{{ route('preview.siswa.activate', ['role' => 'siswa']) }}" style="margin: 0;">
+                @csrf
+                <x-button type="submit">Aktifkan Portal Siswa</x-button>
+            </form>
+        </div>
+    @endif
     @if(session('success'))<x-alert type="success">{{ session('success') }}</x-alert>@endif
     @if($errors->any())<x-alert type="error"><strong>Periksa masukanmu.</strong><ul>@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></x-alert>@endif
     @if($page === 'dashboard') @include('preview.pages.dashboard')

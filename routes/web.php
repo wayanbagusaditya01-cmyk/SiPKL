@@ -24,6 +24,7 @@ Route::post('/logout', [LoginController::class, 'destroy'])->middleware('auth')-
 Route::post('/preview/reset', [PreviewController::class, 'reset'])->middleware('auth')->name('preview.reset');
 
 Route::middleware(['auth', EnsurePreviewRole::class])->group(function () {
+    Route::post('/preview/{role}/activate', [PreviewController::class, 'activateStudent'])->name('preview.siswa.activate');
     Route::get('/preview/{role}/{page?}', [PreviewController::class, 'show'])->name('preview.page');
     Route::post('/preview/{role}/{page}', [PreviewController::class, 'action'])->name('preview.action');
 });

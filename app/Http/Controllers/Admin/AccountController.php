@@ -62,13 +62,17 @@ class AccountController extends Controller
             'status' => ['required', 'boolean'],
         ]);
 
-        User::create([
+        $user = User::create([
             'name' => $values['name'],
             'email' => Str::lower(trim($values['email'])),
             'password' => $values['password'],
             'role' => $values['role'],
             'status' => $request->boolean('status'),
         ]);
+
+        if ($user->role === 'siswa') {
+            $user->ensureStudent();
+        }
 
         return redirect()->route('admin.accounts.index')->with('success', 'Akun berhasil dibuat.');
     }
@@ -110,6 +114,10 @@ class AccountController extends Controller
         }
 
         $account->save();
+
+        if ($account->role === 'siswa') {
+            $account->ensureStudent();
+        }
 
         return redirect()->route('admin.accounts.index')->with('success', 'Akun berhasil diperbarui.');
     }

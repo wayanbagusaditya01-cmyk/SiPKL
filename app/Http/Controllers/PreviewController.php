@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Mentor;
+use App\Models\PklPeriod;
+use App\Models\Place;
 use App\Models\Placement;
 use App\Models\Student;
 use App\Support\PreviewCatalog;
@@ -20,7 +23,24 @@ class PreviewController extends Controller
 
     private function data(Request $request): array
     {
-        return $request->session()->get('sipkl_preview', PreviewData::initial());
+        $data = $request->session()->get('sipkl_preview', PreviewData::initial());
+        $user = $request->user();
+
+        if ($user && $user->role === 'siswa') {
+            $studentIndex = array_search(1, array_column($data['students'], 'id'));
+            if ($studentIndex !== false) {
+                $data['students'][$studentIndex]['name'] = $user->name;
+                $data['students'][$studentIndex]['email'] = $user->email;
+            }
+
+            $accountIndex = array_search(1, array_column($data['accounts'], 'id'));
+            if ($accountIndex !== false) {
+                $data['accounts'][$accountIndex]['name'] = $user->name;
+                $data['accounts'][$accountIndex]['username'] = $user->email;
+            }
+        }
+
+        return $data;
     }
 
     private function context(string $role, string $page): array
@@ -28,6 +48,16 @@ class PreviewController extends Controller
         $this->enabled();
         $roles = config('preview.roles');
         abort_unless(isset($roles[$role]['menus'][$page]), 404);
+
+        if ($role === 'siswa' && auth()->check()) {
+            $user = auth()->user();
+            $roles['siswa']['person'] = $user->name;
+            $roles['siswa']['initials'] = collect(explode(' ', trim($user->name)))
+                ->filter()
+                ->take(2)
+                ->map(fn ($part) => mb_strtoupper(mb_substr($part, 0, 1)))
+                ->implode('');
+        }
 
         return [$roles, $roles[$role]];
     }
@@ -320,5 +350,46 @@ class PreviewController extends Controller
         $request->session()->forget('sipkl_preview');
 
         return redirect()->route('login')->with('success', 'Data contoh sudah dikembalikan ke kondisi awal.');
+    }
+
+    public function activateStudent(Request $request)
+    {
+        $user = $request->user();
+        abort_unless($user && $user->role === 'siswa', 403);
+
+        $student = $user->ensureStudent();
+
+        $activePeriod = PklPeriod::where('status', 'Aktif')->first();
+        if (! $activePeriod) {
+            $activePeriod = PklPeriod::create([
+                'name' => 'PKL 2026/2027',
+                'academic_year' => '2026/2027',
+                'start_date' => '2026-08-01',
+                'end_date' => '2026-10-31',
+                'status' => 'Aktif',
+            ]);
+        }
+
+        if (! $student->placement()->exists()) {
+            $place = Place::first() ?? Place::create([
+                'name' => 'Studio Nusa Digital',
+                'address' => 'Jl. Pendidikan No. 12, Makassar, Sulawesi Selatan',
+                'contact' => '08123456789',
+                'email' => 'studio@nusadigital.test',
+            ]);
+
+            $schoolMentor = Mentor::where('type', 'Sekolah')->first();
+
+            Placement::create([
+                'student_id' => $student->id,
+                'place_id' => $place->id,
+                'period_id' => $activePeriod->id,
+                'school_mentor_id' => $schoolMentor?->id,
+                'placed_at' => '2026-08-01',
+                'status' => 'Aktif',
+            ]);
+        }
+
+        return redirect()->route('student.portal.dashboard')->with('success', 'Akun siswa berhasil dihubungkan ke portal database utama.');
     }
 }
