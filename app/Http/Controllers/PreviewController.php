@@ -9,6 +9,7 @@ use App\Models\Placement;
 use App\Models\Student;
 use App\Support\PreviewCatalog;
 use App\Support\PreviewData;
+use App\Support\PreviewMentor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -47,6 +48,11 @@ class PreviewController extends Controller
     {
         $this->enabled();
         $roles = config('preview.roles');
+        $variant = $role === 'pembina' && auth()->check() ? PreviewMentor::type(auth()->user()) : null;
+        if ($variant && isset($roles['pembina']['variants'][$variant])) {
+            $roles['pembina'] = array_replace($roles['pembina'], $roles['pembina']['variants'][$variant]);
+        }
+        unset($roles['pembina']['variants']);
         abort_unless(isset($roles[$role]['menus'][$page]), 404);
 
         if ($role === 'siswa' && auth()->check()) {
@@ -99,8 +105,9 @@ class PreviewController extends Controller
                 ->values();
         }
 
+        $mentorScope = PreviewMentor::scope($request->user());
         $forms = PreviewCatalog::forms($data);
-        $table = PreviewCatalog::table($role, $page, $data);
+        $table = PreviewCatalog::table($role, $page, $data, $mentorScope);
         $q = trim((string) $request->query('q', ''));
         $filter = (string) $request->query('status', '');
         $studentFilter = (string) $request->query('student', '');
@@ -130,7 +137,7 @@ class PreviewController extends Controller
             $record = collect($data[$table['key']])->firstWhere('id', $id);
         }
         $placement = $request->query('state') === 'unplaced' && $role === 'siswa' ? null : collect($data['placements'])->firstWhere('student', 1);
-        $journals = collect($data['journals'])->filter(fn ($j) => $role === 'siswa' ? $j['student'] === 1 : collect($data['placements'])->contains(fn ($p) => $p['student'] === $j['student'] && $p['school'] === 5))->sortByDesc('date');
+        $journals = collect($data['journals'])->filter(fn ($j) => $role === 'siswa' ? $j['student'] === 1 : collect($data['placements'])->contains(fn ($p) => $p['student'] === $j['student'] && PreviewMentor::guides($p, $mentorScope)))->sortByDesc('date');
         if ($role === 'pembina') {
             $journals = $journals->where('status', '!=', 'Draf');
         }
@@ -150,7 +157,12 @@ class PreviewController extends Controller
             }
         }
 
-        return view('preview.app', compact('roles', 'identity', 'role', 'page', 'data', 'table', 'q', 'filter', 'statuses', 'count', 'current', 'record', 'placement', 'realPlacement', 'studentProfile', 'coordinatorStudents', 'coordinatorUnplacedStudents', 'coordinatorPlacements', 'journals', 'selected', 'form'));
+        return view('preview.app', compact('roles', 'identity', 'role', 'page', 'data', 'table', 'q', 'filter', 'statuses', 'count', 'current', 'record', 'placement', 'realPlacement', 'studentProfile', 'coordinatorStudents', 'coordinatorUnplacedStudents', 'coordinatorPlacements', 'journals', 'selected', 'form', 'mentorScope'));
+    }
+
+    private function profileKey(string $role, array $mentorScope): string
+    {
+        return $role === 'pembina' && $mentorScope['type'] === PreviewMentor::INDUSTRY ? 'pembina-industri' : $role;
     }
 
     private function studentRoute(string $page): string
@@ -184,10 +196,12 @@ class PreviewController extends Controller
 
     public function action(Request $request, string $role, string $page)
     {
-        $this->context($role, $page);
+        [, $identity] = $this->context($role, $page);
         if ($role === 'siswa' && $request->user()->student()->exists()) {
             abort(403);
         }
+
+        $mentorScope = PreviewMentor::scope($request->user());
 
         $data = $this->data($request);
         $action = $request->string('action')->toString();
@@ -223,13 +237,13 @@ class PreviewController extends Controller
             $index = array_search($values['id'], array_column($data['journals'], 'id'));
             abort_if($index === false, 404);
             $j = $data['journals'][$index];
-            abort_unless(collect($data['placements'])->contains(fn ($p) => $p['student'] === $j['student'] && $p['school'] === 5) && $j['status'] === 'Menunggu', 403);
+            abort_unless(collect($data['placements'])->contains(fn ($p) => $p['student'] === $j['student'] && PreviewMentor::guides($p, $mentorScope)) && $j['status'] === 'Menunggu', 403);
             $data['journals'][$index]['status'] = $action === 'approve' ? 'Disetujui' : 'Perlu Revisi';
             $data['journals'][$index]['note'] = $values['note'] ?? '';
         } elseif ($role === 'pembina' && $page === 'penilaian') {
             abort_unless(in_array($action, ['draft', 'publish']), 403);
             $values = $request->validate(['student' => 'required|integer', 'grade' => 'required|numeric|min:0|max:100', 'note' => 'nullable|string|max:3000']);
-            abort_unless(collect($data['placements'])->contains(fn ($p) => $p['student'] === (int) $values['student'] && $p['school'] === 5), 403);
+            abort_unless(collect($data['placements'])->contains(fn ($p) => $p['student'] === (int) $values['student'] && PreviewMentor::guides($p, $mentorScope)), 403);
             $data['grades'][(int) $values['student']] = ['grade' => $values['grade'], 'note' => $values['note'] ?? '', 'date' => config('preview.today'), 'status' => $action === 'draft' ? 'Draf' : 'Terbit'];
         } elseif (($role === 'admin' && $page === 'akun') || ($role === 'koordinator' && isset(PreviewCatalog::forms($data)[$page]))) {
             $form = PreviewCatalog::forms($data)[$page];
@@ -334,11 +348,11 @@ class PreviewController extends Controller
             }
         } elseif ($page === 'profil' && in_array($role, ['admin', 'pembina'])) {
             abort_unless($action === 'profile', 403);
-            $data['profiles'][$role] = $request->validate(['name' => 'required|string|max:100', 'email' => 'required|email|max:120', 'phone' => 'nullable|string|max:20']);
+            $data['profiles'][$this->profileKey($role, $mentorScope)] = $request->validate(['name' => 'required|string|max:100', 'email' => 'required|email|max:120', 'phone' => 'nullable|string|max:20']);
         } else {
             abort(403);
         }
-        $data['logs'][] = ['id' => count($data['logs']) + 1, 'time' => config('preview.today').' '.now('Asia/Makassar')->format('H:i'), 'actor' => $role.'.contoh', 'role' => config('preview.roles.'.$role.'.name'), 'action' => 'Simulasi '.$action, 'entity' => $page, 'detail' => 'Perubahan data contoh dalam sesi pratinjau.'];
+        $data['logs'][] = ['id' => count($data['logs']) + 1, 'time' => config('preview.today').' '.now('Asia/Makassar')->format('H:i'), 'actor' => $role.'.contoh', 'role' => $identity['name'], 'action' => 'Simulasi '.$action, 'entity' => $page, 'detail' => 'Perubahan data contoh dalam sesi pratinjau.'];
         $request->session()->put('sipkl_preview', $data);
 
         return redirect()->route('preview.page', [$role, $page])->with('success', $message);

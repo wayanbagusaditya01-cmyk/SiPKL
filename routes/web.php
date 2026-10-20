@@ -91,3 +91,15 @@ Route::middleware(['auth', 'role:siswa'])->prefix('siswa')->name('student.')->gr
     Route::patch('/notifikasi/{notification}/read', [NotificationController::class, 'read'])->name('notifications.read');
     Route::post('/notifikasi/read-all', [NotificationController::class, 'readAll'])->name('notifications.readAll');
 });
+
+// SEMENTARA: lihat tampilan Pembina Industri tanpa database
+if (app()->environment('local')) {
+    Route::get('/lihat-industri/{page?}', function (\Illuminate\Http\Request $request, string $page = 'dashboard') {
+        $user = new \App\Models\User(['name' => 'Dimas Prakoso', 'email' => 'dimas@example.test', 'role' => 'pembina', 'status' => true]);
+        $user->setRelation('mentor', new \App\Models\Mentor(['type' => 'Industri']));
+        \Illuminate\Support\Facades\Auth::setUser($user);
+        $request->setUserResolver(fn () => $user);
+
+        return app(\App\Http\Controllers\PreviewController::class)->show($request, 'pembina', $page);
+    });
+}

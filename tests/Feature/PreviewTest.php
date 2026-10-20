@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Mentor;
 use App\Models\Place;
 use App\Models\Placement;
 use App\Models\Student;
@@ -271,5 +272,22 @@ class PreviewTest extends TestCase
 
         $this->assertTrue($studentUser->fresh()->student()->exists());
         $this->assertTrue($studentUser->fresh()->student->placement()->exists());
+    }
+
+    public function test_industry_mentor_gets_industry_menus_and_own_scope(): void
+    {
+        $user = User::factory()->create(['role' => 'pembina']);
+        Mentor::factory()->create(['user_id' => $user->id, 'type' => 'Industri', 'nip' => null, 'position' => 'Supervisor']);
+        $this->actingAs($user);
+
+        $this->get('/preview/pembina/dashboard')->assertOk()->assertSee('Pembina Industri')->assertSee('Ringkasan Pembimbingan')->assertSee('Siswa magang');
+        foreach (config('preview.roles.pembina.variants.Industri.menus') as $page => $label) {
+            $this->get("/preview/pembina/$page")->assertOk()->assertSee($label);
+        }
+        $this->get('/preview/pembina/siswa')->assertOk()->assertSee('Pembina Sekolah')->assertSee('Aditya Pratama');
+        $this->get('/preview/pembina/siswa?detail=3')->assertNotFound();
+        $this->get('/preview/pembina/profil')->assertOk()->assertSee('Industri');
+        $this->post('/preview/pembina/jurnal', ['action' => 'approve', 'id' => 1, 'note' => ''])->assertSessionHasNoErrors();
+        $this->post('/preview/pembina/penilaian', ['action' => 'draft', 'student' => 3, 'grade' => 80])->assertForbidden();
     }
 }

@@ -1,11 +1,11 @@
 @php
-    $guided = collect($data['placements'])->where('school', 5);
+    $guided = collect($data['placements'])->filter(fn ($p) => \App\Support\PreviewMentor::guides($p, $mentorScope));
     $selectedStudent = (int) old('student', request('student', 1));
     $grade = $data['grades'][$selectedStudent] ?? null;
     $gradePlacement = $guided->firstWhere('student', $selectedStudent);
 @endphp
 <x-page-heading title="Penilaian PKL" description="Simpan evaluasi sebagai draf, kemudian terbitkan saat sudah siap."/>
-<section class="panel form-width"><form action="{{ $link('penilaian') }}" method="get" class="toolbar"><div class="field"><label for="student-picker">Pilih siswa bimbingan</label><select id="student-picker" name="student">@foreach($guided as $p)<option value="{{ $p['student'] }}" @selected($selectedStudent === $p['student'])>{{ $lookup('students', $p['student'])['name'] }}</option>@endforeach</select></div><x-button type="submit" variant="secondary">Buka Penilaian</x-button></form>
+<section class="panel form-width"><form action="{{ $link('penilaian') }}" method="get" class="toolbar"><div class="field"><label for="student-picker">{{ $mentorScope['type'] === 'Industri' ? 'Pilih siswa magang' : 'Pilih siswa bimbingan' }}</label><select id="student-picker" name="student">@foreach($guided as $p)<option value="{{ $p['student'] }}" @selected($selectedStudent === $p['student'])>{{ $lookup('students', $p['student'])['name'] }}</option>@endforeach</select></div><x-button type="submit" variant="secondary">Buka Penilaian</x-button></form>
 @if(!$gradePlacement)<x-empty title="Siswa bimbingan belum dipilih" description="Pilih siswa yang terhubung ke akun Pembina dalam pratinjau."/>
 @else
 <div class="section-heading"><h2>{{ $lookup('students', $selectedStudent)['name'] }}</h2><x-badge :status="$grade['status'] ?? 'Belum dinilai'"/></div><dl><dt>Periode</dt><dd>{{ $lookup('periods', $gradePlacement['period'])['name'] }}</dd><dt>Tempat PKL</dt><dd>{{ $lookup('places', $gradePlacement['place'])['name'] }}</dd></dl>

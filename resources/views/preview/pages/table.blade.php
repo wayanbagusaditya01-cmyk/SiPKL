@@ -1,5 +1,5 @@
 @php
-    $descriptions = ['akun' => 'Buat dan perbarui akun. Profil peran harus lengkap sebelum aktivasi.', 'siswa' => $role === 'pembina' ? 'Siswa yang terhubung ke Pembina Sekolah dalam data contoh.' : 'Kelola identitas siswa dan relasinya dengan akun.', 'tempat' => 'Alamat, koordinat, dan kontak tempat kegiatan PKL.', 'pembina' => 'Profil sekolah dan industri tetap berada dalam peran Pembina PKL.', 'periode' => 'Atur rentang tanggal dan status pelaksanaan PKL.', 'penempatan' => 'Satu siswa memiliki satu penempatan sepanjang program sekolah.', 'absensi' => 'Catatan kehadiran dan waktu kegiatan PKL.', 'log-aktivitas' => 'Jejak aktivitas bersifat baca saja dan tidak memuat rahasia.'];
+    $descriptions = ['akun' => 'Buat dan perbarui akun. Profil peran harus lengkap sebelum aktivasi.', 'siswa' => $role === 'pembina' ? ($mentorScope['type'] === 'Industri' ? 'Siswa yang magang di tempat PKL kamu dalam data contoh.' : 'Siswa yang terhubung ke Pembina Sekolah dalam data contoh.') : 'Kelola identitas siswa dan relasinya dengan akun.', 'tempat' => 'Alamat, koordinat, dan kontak tempat kegiatan PKL.', 'pembina' => 'Profil sekolah dan industri tetap berada dalam peran Pembina PKL.', 'periode' => 'Atur rentang tanggal dan status pelaksanaan PKL.', 'penempatan' => 'Satu siswa memiliki satu penempatan sepanjang program sekolah.', 'absensi' => 'Catatan kehadiran dan waktu kegiatan PKL.', 'log-aktivitas' => 'Jejak aktivitas bersifat baca saja dan tidak memuat rahasia.'];
     $editing = $form && request('form') !== null;
     $editRecord = $editing && request('form') !== 'new' ? $lookup($form['key'], (int) request('form')) : null;
 @endphp
@@ -27,7 +27,7 @@
     @if($record)
     <section class="panel detail-panel"><div class="section-heading"><h2>Detail {{ $identity['menus'][$page] }}</h2><a href="{{ $link($page) }}">Tutup detail</a></div>
         @php
-            $displayRow = collect(\App\Support\PreviewCatalog::table($role, $page, $data)['rows'])->firstWhere('id', $record['id']);
+            $displayRow = collect(\App\Support\PreviewCatalog::table($role, $page, $data, $mentorScope)['rows'])->firstWhere('id', $record['id']);
         @endphp
         <dl>@foreach($displayRow['cells'] as $cell)<dt>{{ $table['headers'][$loop->index] }}</dt><dd>{{ $cell }}</dd>@endforeach
         @if($page === 'log-aktivitas')<dt>Detail aktivitas</dt><dd>{{ $record['detail'] }}</dd>@endif
@@ -46,7 +46,7 @@
         $additionalFilters = match($page) {
             'akun' => ['account_role' => ['Peran akun', collect($data['accounts'])->pluck('role')->unique()->all()]],
             'siswa' => ['class' => ['Kelas', collect($data['students'])->pluck('class')->unique()->all()], 'major' => ['Jurusan', collect($data['students'])->pluck('major')->unique()->all()]],
-            'absensi' => $role === 'pembina' ? ['student' => ['Siswa bimbingan', collect($data['placements'])->where('school', 5)->map(fn($p) => $lookup('students', $p['student'])['name'])->all()]] : [],
+            'absensi' => $role === 'pembina' ? ['student' => [$mentorScope['type'] === 'Industri' ? 'Siswa magang' : 'Siswa bimbingan', collect($data['placements'])->filter(fn ($p) => \App\Support\PreviewMentor::guides($p, $mentorScope))->map(fn($p) => $lookup('students', $p['student'])['name'])->all()]] : [],
             'log-aktivitas' => ['actor' => ['Akun pelaku', collect($data['logs'])->pluck('actor')->unique()->all()], 'activity' => ['Tindakan', collect($data['logs'])->pluck('action')->unique()->all()], 'entity' => ['Entitas', collect($data['logs'])->pluck('entity')->unique()->all()]],
             default => []
         };

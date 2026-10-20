@@ -20,8 +20,10 @@ class PreviewCatalog
         ];
     }
 
-    public static function table(string $role, string $page, array $data): array
+    public static function table(string $role, string $page, array $data, array $mentorScope = ['type' => 'Sekolah', 'key' => 'school', 'id' => 5]): array
     {
+        $industry = $mentorScope['type'] === 'Industri';
+        $guides = fn ($p) => PreviewMentor::guides($p, $mentorScope);
         $student = function ($id) use ($data, $role) {
             if ($role === 'siswa' && $id === 1 && auth()->check()) {
                 return auth()->user()->name;
@@ -31,10 +33,10 @@ class PreviewCatalog
         };
         $place = fn ($id) => collect($data['places'])->firstWhere('id', $id)['name'] ?? 'Belum ditempatkan';
         $status = fn ($id) => collect($data['placements'])->contains('student', $id) ? 'Ditempatkan' : 'Belum ditempatkan';
-        $scope = fn ($row) => $role === 'siswa' ? $row['student'] === 1 : ($role !== 'pembina' || collect($data['placements'])->contains(fn ($p) => $p['student'] === $row['student'] && $p['school'] === 5));
+        $scope = fn ($row) => $role === 'siswa' ? $row['student'] === 1 : ($role !== 'pembina' || collect($data['placements'])->contains(fn ($p) => $p['student'] === $row['student'] && $guides($p)));
         $result = match ($page) {
             'akun' => ['key' => 'accounts', 'headers' => ['Nama', 'Username', 'Peran', 'Status'], 'rows' => array_map(fn ($a) => ['id' => $a['id'], 'cells' => [$a['name'], $a['username'], $a['role'], $a['status']], 'status' => $a['status']], $data['accounts'])],
-            'siswa' => ['key' => 'students', 'headers' => ['NIS', 'Nama siswa', 'Kelas', $role === 'pembina' ? 'Tempat PKL' : 'Jurusan', 'Status PKL'], 'rows' => collect($data['students'])->filter(fn ($s) => $role !== 'pembina' || collect($data['placements'])->contains(fn ($p) => $p['student'] === $s['id'] && $p['school'] === 5))->map(fn ($s) => ['id' => $s['id'], 'cells' => [$s['nis'], $s['name'], $s['class'], $role === 'pembina' ? $place(collect($data['placements'])->firstWhere('student', $s['id'])['place'] ?? 0) : $s['major'], $status($s['id'])], 'status' => $status($s['id'])])->values()->all()],
+            'siswa' => ['key' => 'students', 'headers' => ['NIS', 'Nama siswa', 'Kelas', $role === 'pembina' ? ($industry ? 'Pembina Sekolah' : 'Tempat PKL') : 'Jurusan', 'Status PKL'], 'rows' => collect($data['students'])->filter(fn ($s) => $role !== 'pembina' || collect($data['placements'])->contains(fn ($p) => $p['student'] === $s['id'] && $guides($p)))->map(fn ($s) => ['id' => $s['id'], 'cells' => [$s['nis'], $s['name'], $s['class'], $role === 'pembina' ? ($industry ? (collect($data['mentors'])->firstWhere('id', collect($data['placements'])->firstWhere('student', $s['id'])['school'] ?? 0)['name'] ?? 'Belum ditentukan') : $place(collect($data['placements'])->firstWhere('student', $s['id'])['place'] ?? 0)) : $s['major'], $status($s['id'])], 'status' => $status($s['id'])])->values()->all()],
             'tempat' => ['key' => 'places', 'headers' => ['Nama tempat', 'Alamat', 'Koordinat', 'Kontak'], 'rows' => array_map(fn ($p) => ['id' => $p['id'], 'cells' => [$p['name'], $p['address'], $p['latitude'].', '.$p['longitude'], $p['contact']], 'status' => ''], $data['places'])],
             'pembina' => ['key' => 'mentors', 'headers' => ['Nama', 'Tipe', 'Jabatan / NIP', 'Email', 'Tempat PKL'], 'rows' => array_map(fn ($m) => ['id' => $m['id'], 'cells' => [$m['name'], $m['type'], $m['type'] === 'Sekolah' ? ($m['nip'] ?: 'Belum diisi') : $m['position'], $m['email'], $m['place'] ? $place($m['place']) : 'Sekolah'], 'status' => $m['type']], $data['mentors'])],
             'periode' => ['key' => 'periods', 'headers' => ['Periode', 'Tahun ajaran', 'Mulai', 'Selesai', 'Status'], 'rows' => array_map(fn ($p) => ['id' => $p['id'], 'cells' => [$p['name'], $p['year'], $p['start'], $p['end'], $p['status']], 'status' => $p['status']], $data['periods'])],
