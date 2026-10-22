@@ -92,7 +92,13 @@ class AttendanceController extends Controller
             'check_in_distance' => $location['distance'],
         ]);
 
-        return $this->respond($request, 'Absen masuk tercatat pukul '.$now->format('H:i').($lateMinutes ? " (terlambat {$lateMinutes} menit)" : '').'.');
+        $late = $lateMinutes ? $this->durationLabel($lateMinutes) : null;
+
+        return $this->respond(
+            $request,
+            'Absen masuk tercatat pukul '.$now->format('H:i').($late ? " (terlambat {$late})" : '').'.',
+            ['title' => 'Selamat bekerja!', 'time' => $now->format('H:i'), 'note' => $late ? "Terlambat {$late}" : 'Tepat waktu'],
+        );
     }
 
     public function checkOut(Request $request): RedirectResponse|JsonResponse
@@ -108,21 +114,37 @@ class AttendanceController extends Controller
             ]);
         }
 
-        if ($now->lt($place->scheduleAt($now, 'check_out_start'))) {
-            throw ValidationException::withMessages(['attendance' => 'Absen pulang dibuka pukul '.$place->scheduleTime('check_out_start').'.']);
-        }
-
         $location = $this->validatedLocation($request, $place);
+        $scheduledLeave = $place->scheduleAt($now, 'check_out_start');
+        $earlyMinutes = $now->lt($scheduledLeave) ? (int) $now->diffInMinutes($scheduledLeave) : null;
 
         $attendance->update([
             'time_out' => $now->format('H:i'),
+            'early_leave_minutes' => $earlyMinutes,
             'check_out_latitude' => $location['latitude'],
             'check_out_longitude' => $location['longitude'],
             'check_out_accuracy' => $location['accuracy'],
             'check_out_distance' => $location['distance'],
         ]);
 
-        return $this->respond($request, 'Absen pulang tercatat pukul '.$now->format('H:i').'.');
+        $early = $earlyMinutes ? $this->durationLabel($earlyMinutes) : null;
+
+        return $this->respond(
+            $request,
+            'Absen pulang tercatat pukul '.$now->format('H:i').($early ? " ({$early} lebih awal)" : '').'.',
+            ['title' => 'Terima kasih, hati-hati di jalan!', 'time' => $now->format('H:i'), 'note' => $early ? "Pulang {$early} lebih awal" : 'Sesuai jadwal'],
+        );
+    }
+
+    /**
+     * Durasi dalam bahasa sehari-hari, misalnya "45 menit" atau "1 jam 15 menit".
+     */
+    private function durationLabel(int $minutes): string
+    {
+        $hours = intdiv($minutes, 60);
+        $rest = $minutes % 60;
+
+        return collect([$hours ? "{$hours} jam" : null, $rest ? "{$rest} menit" : null])->filter()->implode(' ');
     }
 
     public function leave(Request $request): RedirectResponse|JsonResponse
@@ -203,9 +225,7 @@ class AttendanceController extends Controller
         }
 
         if ($todayAttendance) {
-            $opensAt = $place->scheduleAt($now, 'check_out_start');
-
-            return $now->lt($opensAt) ? ['check-out-wait', $opensAt] : ['check-out', null];
+            return ['check-out', null];
         }
 
         $opensAt = $place->scheduleAt($now, 'check_in_start');
@@ -217,10 +237,13 @@ class AttendanceController extends Controller
         return $now->gte($place->scheduleAt($now, 'check_out_start')) ? ['missed', null] : ['check-in', null];
     }
 
-    private function respond(Request $request, string $message): RedirectResponse|JsonResponse
+    /**
+     * @param  array{title?: string, time?: string, note?: string}  $details  Data tambahan untuk animasi sukses.
+     */
+    private function respond(Request $request, string $message, array $details = []): RedirectResponse|JsonResponse
     {
         if ($request->expectsJson()) {
-            return response()->json(['message' => $message]);
+            return response()->json(['message' => $message, ...$details]);
         }
 
         return redirect()->route('student.attendance.index')->with('success', $message);

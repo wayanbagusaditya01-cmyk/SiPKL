@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Fillable([
-    'student_id', 'attendance_date', 'status', 'time_in', 'time_out', 'late_minutes', 'note', 'leave_photo_path',
+    'student_id', 'attendance_date', 'status', 'time_in', 'time_out', 'late_minutes', 'early_leave_minutes', 'note', 'leave_photo_path',
     'check_in_latitude', 'check_in_longitude', 'check_in_accuracy', 'check_in_distance',
     'check_out_latitude', 'check_out_longitude', 'check_out_accuracy', 'check_out_distance',
 ])]
@@ -57,6 +57,7 @@ class Attendance extends Model
             'check_out_latitude' => 'decimal:7',
             'check_out_longitude' => 'decimal:7',
             'late_minutes' => 'integer',
+            'early_leave_minutes' => 'integer',
         ];
     }
 }

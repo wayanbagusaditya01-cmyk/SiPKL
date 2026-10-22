@@ -235,46 +235,112 @@
 
 /* Animasi sukses */
 .attend-success {
+    --origin-x: 50%;
+    --origin-y: 50%;
     position: absolute;
     inset: 0;
     z-index: 3;
     display: grid;
     place-content: center;
     justify-items: center;
-    gap: 16px;
-    background: rgba(6, 12, 24, 0.94);
-    font-size: 17px;
-    font-weight: 600;
+    gap: 6px;
+    padding: 24px;
+    overflow: hidden;
+    background:
+        radial-gradient(circle at var(--origin-x) var(--origin-y), #34d399 0%, #059669 45%, #064e3b 100%);
+    color: #fff;
 }
 .attend-success[hidden] {
     display: none;
 }
-.attend-success svg {
-    width: 112px;
-    height: 112px;
+.attend-success__badge {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 120px;
+    height: 120px;
+    margin-bottom: 10px;
+}
+.attend-success__halo {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.18);
+    box-shadow: 0 0 0 12px rgba(255, 255, 255, 0.08), 0 0 60px rgba(255, 255, 255, 0.45);
+}
+.attend-success__badge svg {
+    position: relative;
+    width: 120px;
+    height: 120px;
 }
 .attend-success__circle {
-    fill: none;
-    stroke: var(--attend-ok);
-    stroke-width: 6;
+    fill: #fff;
+    stroke: #fff;
+    stroke-width: 4;
 }
 .attend-success__check {
     fill: none;
-    stroke: #fff;
-    stroke-width: 8;
+    stroke: #059669;
+    stroke-width: 9;
     stroke-linecap: round;
     stroke-linejoin: round;
 }
-.attend-spark {
+.attend-success__time {
+    font-size: 56px;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.03em;
+    font-variant-numeric: tabular-nums;
+}
+.attend-success__time span {
+    display: inline-block;
+}
+.attend-success__title {
+    font-size: 19px;
+    font-weight: 700;
+}
+.attend-success__note {
+    padding: 4px 12px;
+    border-radius: 999px;
+    background: rgba(6, 78, 59, 0.45);
+    font-size: 13px;
+    font-weight: 600;
+}
+.attend-wave {
     position: absolute;
-    top: calc(50% - 30px);
-    left: calc(50% - 4px);
-    width: 8px;
-    height: 8px;
+    top: var(--origin-y);
+    left: var(--origin-x);
+    width: 128px;
+    height: 128px;
+    margin: -64px 0 0 -64px;
     border-radius: 50%;
-    background: var(--attend-ok);
-    box-shadow: 0 0 12px var(--attend-ok);
+    border: 3px solid rgba(255, 255, 255, 0.7);
     pointer-events: none;
+}
+.attend-confetti {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    overflow: hidden;
+    pointer-events: none;
+}
+.attend-confetti__piece {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 10px;
+    height: 14px;
+    border-radius: 2px;
+    will-change: transform, opacity;
+}
+.attend-confetti__piece--round {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+}
+.attend-button.is-confirming {
+    background: radial-gradient(circle at 30% 25%, #fcd34d, #f59e0b 55%, #b45309) !important;
+    box-shadow: 0 18px 44px -10px rgba(245, 158, 11, 0.7);
 }
 
 /* Kolom samping */

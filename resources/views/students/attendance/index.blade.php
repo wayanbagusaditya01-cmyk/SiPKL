@@ -13,7 +13,6 @@
         'check-in' => ['Mencari lokasi', 'neutral', 'Masuk', ''],
         'check-out' => ['Mencari lokasi', 'neutral', 'Pulang', ''],
         'check-in-wait' => ['Dibuka '.$place->scheduleTime('check_in_start'), 'neutral', 'Masuk', 'Absen masuk belum dibuka.'],
-        'check-out-wait' => ['Pulang '.$place->scheduleTime('check_out_start'), 'ok', 'Pulang', 'Absen pulang belum dibuka.'],
         'done' => ['Selesai', 'ok', 'Selesai', ''],
         'leave' => ['Izin', 'warn', 'Izin', ''],
         'holiday' => ['Libur', 'warn', 'Libur', $holiday?->name ?? ''],
@@ -33,6 +32,7 @@
     @if($canUseLocation)
         data-place-lat="{{ $place->latitude }}" data-place-lng="{{ $place->longitude }}" data-radius="{{ $place->attendance_radius }}"
         data-url="{{ $state === 'check-in' ? route('student.attendance.check-in') : route('student.attendance.check-out') }}"
+        @if($state === 'check-out') data-leave-at="{{ $place->scheduleAt(now(), 'check_out_start')->toIso8601String() }}" data-leave-time="{{ $place->scheduleTime('check_out_start') }}" @endif
     @endif>
     <h1 class="sr-only">Absensi</h1>
 
@@ -93,11 +93,17 @@
         </dl>
 
         <div class="attend-success" data-success hidden>
-            <svg viewBox="0 0 120 120" aria-hidden="true">
-                <circle class="attend-success__circle" cx="60" cy="60" r="50"/>
-                <path class="attend-success__check" d="M38 62 L53 77 L84 45"/>
-            </svg>
-            <p data-success-message role="status"></p>
+            <div class="attend-success__badge">
+                <span class="attend-success__halo" aria-hidden="true"></span>
+                <svg viewBox="0 0 120 120" aria-hidden="true">
+                    <circle class="attend-success__circle" cx="60" cy="60" r="50"/>
+                    <path class="attend-success__check" d="M38 62 L53 77 L84 45"/>
+                </svg>
+            </div>
+            <p class="attend-success__time" data-success-time aria-hidden="true"></p>
+            <p class="attend-success__title" data-success-title></p>
+            <p class="attend-success__note" data-success-note></p>
+            <p class="sr-only" data-success-message role="status"></p>
         </div>
     </section>
 
@@ -133,6 +139,7 @@
                             </div>
                             <div class="attend-row__tags">
                                 @if($attendance->late_minutes)<span class="badge attend-badge-late">Terlambat</span>@endif
+                                @if($attendance->early_leave_minutes)<span class="badge attend-badge-late">Pulang cepat</span>@endif
                                 @if($attendance->leave_photo_path)
                                     <a class="attend-row__photo" href="{{ asset('storage/'.$attendance->leave_photo_path) }}" target="_blank" rel="noopener noreferrer"><img src="{{ asset('storage/'.$attendance->leave_photo_path) }}" alt="Foto bukti izin {{ $attendance->attendance_date->format('d-m-Y') }}" loading="lazy"></a>
                                 @endif

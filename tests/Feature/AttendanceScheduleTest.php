@@ -111,15 +111,40 @@ class AttendanceScheduleTest extends TestCase
         $this->assertSame(20, Attendance::where('student_id', $student->id)->sole()->late_minutes);
     }
 
-    public function test_check_in_closes_at_check_out_time_and_check_out_waits_for_it(): void
+    public function test_early_check_out_is_allowed_and_records_how_early(): void
     {
-        ['user' => $user] = $this->createPlacedStudent();
+        ['user' => $user, 'student' => $student] = $this->createPlacedStudent();
         $this->actingAs($user);
 
         $this->travelTo('2026-10-12 07:30:00');
         $this->post(route('student.attendance.check-in'), $this->location())->assertSessionHasNoErrors();
+        $this->get(route('student.attendance.index'))->assertViewHas('state', 'check-out');
+
+        $this->travelTo('2026-10-12 14:45:00');
+        $this->postJson(route('student.attendance.check-out'), $this->location())
+            ->assertOk()
+            ->assertJson([
+                'message' => 'Absen pulang tercatat pukul 14:45 (1 jam 15 menit lebih awal).',
+                'time' => '14:45',
+                'note' => 'Pulang 1 jam 15 menit lebih awal',
+            ]);
+
+        $attendance = Attendance::where('student_id', $student->id)->sole();
+        $this->assertSame('14:45', $attendance->time_out);
+        $this->assertSame(75, $attendance->early_leave_minutes);
+    }
+
+    public function test_on_time_check_out_has_no_early_leave_and_check_in_closes_at_check_out_time(): void
+    {
+        ['user' => $user, 'student' => $student] = $this->createPlacedStudent();
+        $this->actingAs($user);
+
+        $this->travelTo('2026-10-12 07:30:00');
+        $this->post(route('student.attendance.check-in'), $this->location());
+        $this->travelTo('2026-10-12 16:05:00');
         $this->post(route('student.attendance.check-out'), $this->location())
-            ->assertSessionHasErrors(['attendance' => 'Absen pulang dibuka pukul 16:00.']);
+            ->assertSessionHas('success', 'Absen pulang tercatat pukul 16:05.');
+        $this->assertNull(Attendance::where('student_id', $student->id)->sole()->early_leave_minutes);
 
         $this->travelTo('2026-10-13 16:10:00');
         $this->post(route('student.attendance.check-in'), $this->location())

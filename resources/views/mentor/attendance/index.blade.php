@@ -64,6 +64,7 @@
                             <td data-label="Status">
                                 <x-badge :status="$attendance->status"/>
                                 @if($attendance->late_minutes)<small class="muted" style="display: block; color: var(--error);">Terlambat {{ $attendance->late_minutes }} mnt</small>@endif
+                                @if($attendance->early_leave_minutes)<small class="muted" style="display: block; color: var(--error);">Pulang cepat {{ $attendance->early_leave_minutes }} mnt</small>@endif
                             </td>
                             <td data-label="Jam masuk">{{ $attendance->time_in ?: '—' }}</td>
                             <td data-label="Jam keluar">{{ $attendance->time_out ?: '—' }}</td>

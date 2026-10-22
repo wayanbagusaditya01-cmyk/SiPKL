@@ -143,7 +143,7 @@ class AttendanceLocationTest extends TestCase
         $this->actingAs($user)
             ->postJson(route('student.attendance.check-in'), $this->location(self::NEARBY_LATITUDE))
             ->assertOk()
-            ->assertJson(['message' => 'Absen masuk tercatat pukul 07:45.']);
+            ->assertJson(['message' => 'Absen masuk tercatat pukul 07:45.', 'time' => '07:45', 'note' => 'Tepat waktu']);
 
         $this->postJson(route('student.attendance.check-in'), $this->location(self::NEARBY_LATITUDE))
             ->assertUnprocessable()
@@ -192,8 +192,8 @@ class AttendanceLocationTest extends TestCase
         $this->post(route('student.attendance.check-in'), $this->location(self::NEARBY_LATITUDE));
 
         $this->get(route('student.attendance.index'))
-            ->assertViewHas('state', 'check-out-wait')
-            ->assertSee('Pulang 16:00')
+            ->assertViewHas('state', 'check-out')
+            ->assertSee('data-leave-time="16:00"', false)
             ->assertSee('07:45');
     }
 

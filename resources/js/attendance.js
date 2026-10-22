@@ -35,11 +35,42 @@ function initAttendance(root) {
     let watchId = null;
     let hasPosition = false;
     let readyPulse = null;
+    let confirmTimer = null;
+    const label = one('[data-button-label]');
+    const defaultLabel = label.textContent;
+    const leaveAt = root.dataset.leaveAt ? new Date(root.dataset.leaveAt) : null;
+    const isEarlyLeave = () => state === 'check-out' && leaveAt !== null && Date.now() < leaveAt.getTime();
 
     gsap.set(me, { x: CENTER, y: CENTER });
     retry?.addEventListener('click', watchLocation);
-    button.addEventListener('click', submitAttendance);
+    button.addEventListener('click', handleButton);
     watchLocation();
+
+    /**
+     * Pulang sebelum jadwal butuh dua kali tekan agar tidak terjadi tanpa sengaja.
+     */
+    function handleButton() {
+        if (isEarlyLeave() && !button.classList.contains('is-confirming')) {
+            button.classList.add('is-confirming');
+            label.textContent = 'Yakin?';
+            hint.textContent = `Jadwal pulang ${root.dataset.leaveTime}. Tekan lagi untuk pulang lebih awal.`;
+            hint.classList.remove('is-error');
+            gsap.fromTo(button, { rotation: -6 }, { rotation: 0, duration: 0.6, ease: 'elastic.out(1, 0.3)' });
+            confirmTimer = setTimeout(cancelConfirm, 4000);
+            return;
+        }
+
+        clearTimeout(confirmTimer);
+        submitAttendance();
+    }
+
+    function cancelConfirm() {
+        button.classList.remove('is-confirming');
+        label.textContent = defaultLabel;
+        if (current) {
+            hint.textContent = `${Math.round(offsetFromPlace(current.latitude, current.longitude).distance).toLocaleString('id-ID')} m dari lokasi PKL`;
+        }
+    }
 
     function setStatus(pillText, hintText, tone = 'neutral', isError = false) {
         pill.textContent = pillText;
@@ -96,8 +127,8 @@ function initAttendance(root) {
             setStatus('GPS kurang akurat', `Akurasi ±${Math.round(accuracy)} m. Nyalakan GPS dan tunggu sebentar.`, 'warn', true);
         } else if (!isInside) {
             setStatus('Di luar area', `${meters} m dari lokasi PKL`, 'warn');
-        } else {
-            setStatus('Di area PKL', `${meters} m dari lokasi PKL`, 'ok');
+        } else if (!button.classList.contains('is-confirming')) {
+            setStatus('Di area PKL', isEarlyLeave() ? `${meters} m · jadwal pulang ${root.dataset.leaveTime}` : `${meters} m dari lokasi PKL`, 'ok');
         }
 
         setReady(isInside && isPrecise);
@@ -120,6 +151,11 @@ function initAttendance(root) {
         }
 
         button.disabled = !isReady;
+
+        if (!isReady && button.classList.contains('is-confirming')) {
+            clearTimeout(confirmTimer);
+            cancelConfirm();
+        }
 
         if (isReady && !readyPulse && !reducedMotion) {
             readyPulse = gsap.fromTo(one('.attend-button__ring'), { opacity: 0.9, scale: 0.94 }, { opacity: 0, scale: 1.3, duration: 1.6, repeat: -1, ease: 'power2.out' });
@@ -159,9 +195,10 @@ function initAttendance(root) {
             }
 
             navigator.geolocation.clearWatch(watchId);
-            celebrate(data.message);
+            celebrate(data);
         } catch (error) {
-            button.classList.remove('is-loading');
+            button.classList.remove('is-loading', 'is-confirming');
+            label.textContent = defaultLabel;
             button.disabled = false;
             hint.textContent = error.message;
             hint.classList.add('is-error');
@@ -169,48 +206,114 @@ function initAttendance(root) {
         }
     }
 
-    function celebrate(message) {
+    /**
+     * Tombol meledak menjadi layar hijau, gelombang kejut, konfeti, lalu centang dan jam absen.
+     */
+    function celebrate(data) {
+        const card = one('.attend-main');
         const overlay = one('[data-success]');
-        const circle = one('.attend-success__circle');
-        const check = one('.attend-success__check');
-        one('[data-success-message]').textContent = message;
+        const timeLabel = one('[data-success-time]');
+        const cardBox = card.getBoundingClientRect();
+        const buttonBox = button.getBoundingClientRect();
+        const originX = buttonBox.left + buttonBox.width / 2 - cardBox.left;
+        const originY = buttonBox.top + buttonBox.height / 2 - cardBox.top;
+
+        overlay.style.setProperty('--origin-x', `${originX}px`);
+        overlay.style.setProperty('--origin-y', `${originY}px`);
+        timeLabel.replaceChildren(...[...(data.time ?? '')].map((character) => Object.assign(document.createElement('span'), { textContent: character })));
+        one('[data-success-title]').textContent = data.title ?? 'Berhasil!';
+        one('[data-success-note]').textContent = data.note ?? '';
+        one('[data-success-message]').textContent = data.message ?? '';
         overlay.hidden = false;
+        navigator.vibrate?.([30, 50, 80]);
 
         if (reducedMotion) {
-            setTimeout(() => window.location.reload(), 1200);
+            setTimeout(() => window.location.reload(), 1800);
             return;
         }
 
-        const circleLength = circle.getTotalLength();
+        const check = one('.attend-success__check');
         const checkLength = check.getTotalLength();
-        gsap.set(circle, { strokeDasharray: circleLength, strokeDashoffset: circleLength });
+        const reach = Math.hypot(Math.max(originX, cardBox.width - originX), Math.max(originY, cardBox.height - originY));
         gsap.set(check, { strokeDasharray: checkLength, strokeDashoffset: checkLength });
+        gsap.set(timeLabel, { perspective: 400 });
 
-        gsap.timeline({ onComplete: () => setTimeout(() => window.location.reload(), 900) })
-            .from(overlay, { opacity: 0, duration: 0.3 })
-            .to(circle, { strokeDashoffset: 0, duration: 0.6, ease: 'power2.inOut' })
-            .to(check, { strokeDashoffset: 0, duration: 0.4, ease: 'power2.out' }, '-=0.1')
-            .from(one('[data-success-message]'), { y: 12, opacity: 0, duration: 0.4 }, '-=0.2')
-            .add(() => burst(overlay), '-=0.5');
+        gsap.timeline({ onComplete: () => setTimeout(() => window.location.reload(), 700) })
+            .to(button, { scale: 0.82, duration: 0.14, ease: 'power2.in' })
+            .to(button, { scale: 1.2, duration: 0.2, ease: 'power2.out' })
+            .fromTo(overlay,
+                { clipPath: `circle(0px at ${originX}px ${originY}px)` },
+                { clipPath: `circle(${reach}px at ${originX}px ${originY}px)`, duration: 0.75, ease: 'expo.inOut' }, '-=0.1')
+            .add(() => {
+                shockwave(overlay);
+                confetti(buttonBox);
+            }, '-=0.45')
+            .from(one('.attend-success__badge'), { scale: 0, rotation: -120, duration: 0.8, ease: 'back.out(2.4)' }, '-=0.3')
+            .fromTo(one('.attend-success__halo'), { scale: 0.6, opacity: 0 }, { scale: 1.15, opacity: 1, duration: 0.6, ease: 'power2.out' }, '<0.15')
+            .to(check, { strokeDashoffset: 0, duration: 0.45, ease: 'power3.out' }, '<0.1')
+            .from(timeLabel.children, { yPercent: 120, rotationX: -90, opacity: 0, stagger: 0.06, duration: 0.6, ease: 'back.out(2)' }, '-=0.25')
+            .from([one('[data-success-title]'), one('[data-success-note]')], { y: 18, opacity: 0, stagger: 0.12, duration: 0.5, ease: 'power3.out' }, '-=0.3')
+            .to(one('.attend-success__halo'), { scale: 1.45, opacity: 0, duration: 1.1, ease: 'sine.out' })
+            .to({}, { duration: 0.6 });
     }
 
-    function burst(overlay) {
-        for (let index = 0; index < 16; index++) {
-            const spark = document.createElement('span');
-            const angle = (index / 16) * Math.PI * 2;
-            const reach = 80 + Math.random() * 50;
-            spark.className = 'attend-spark';
-            overlay.append(spark);
-            gsap.fromTo(spark, { x: 0, y: 0, opacity: 1, scale: 1 }, {
-                x: Math.cos(angle) * reach,
-                y: Math.sin(angle) * reach,
+    function shockwave(overlay) {
+        for (let index = 0; index < 3; index++) {
+            const wave = document.createElement('span');
+            wave.className = 'attend-wave';
+            overlay.append(wave);
+            gsap.fromTo(wave, { scale: 0.6, opacity: 0.9 }, {
+                scale: 7,
                 opacity: 0,
-                scale: 0.3,
-                duration: 1,
-                ease: 'power3.out',
-                onComplete: () => spark.remove(),
+                duration: 1.3,
+                delay: index * 0.16,
+                ease: 'power2.out',
+                onComplete: () => wave.remove(),
             });
         }
+    }
+
+    /**
+     * Konfeti memancar dari tombol ke seluruh layar lalu jatuh perlahan.
+     */
+    function confetti(origin) {
+        const layer = document.createElement('div');
+        const colors = ['#34d399', '#60a5fa', '#fbbf24', '#f472b6', '#a78bfa', '#ffffff'];
+        const startX = origin.left + origin.width / 2;
+        const startY = origin.top + origin.height / 2;
+        const random = (min, max) => min + Math.random() * (max - min);
+        layer.className = 'attend-confetti';
+        document.body.append(layer);
+
+        for (let index = 0; index < 110; index++) {
+            const piece = document.createElement('span');
+            const angle = random(-165, -15) * (Math.PI / 180);
+            const speed = random(220, Math.max(420, window.innerHeight * 0.75));
+            piece.className = `attend-confetti__piece${index % 3 === 0 ? ' attend-confetti__piece--round' : ''}`;
+            piece.style.background = colors[index % colors.length];
+            layer.append(piece);
+
+            gsap.timeline({ delay: index < 55 ? 0 : 0.18 })
+                .set(piece, { x: startX, y: startY, rotation: random(0, 360), scale: random(0.7, 1.3) })
+                .to(piece, {
+                    x: startX + Math.cos(angle) * speed,
+                    y: startY + Math.sin(angle) * speed,
+                    rotation: `+=${random(180, 720)}`,
+                    duration: random(0.6, 0.95),
+                    ease: 'power3.out',
+                })
+                .to(piece, {
+                    y: `+=${random(window.innerHeight * 0.5, window.innerHeight)}`,
+                    x: `+=${random(-90, 90)}`,
+                    rotation: `+=${random(180, 540)}`,
+                    rotationX: random(180, 720),
+                    opacity: 0,
+                    duration: random(1.4, 2.3),
+                    ease: 'power1.in',
+                });
+        }
+
+        setTimeout(() => layer.remove(), 3800);
     }
 
     function offsetFromPlace(latitude, longitude) {
