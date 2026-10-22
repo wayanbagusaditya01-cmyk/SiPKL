@@ -1,0 +1,13 @@
+<x-page-heading :title="$role === 'admin' ? 'Laporan Penggunaan Sistem' : 'Laporan Pelaksanaan PKL'" :description="$role === 'admin' ? 'Ringkasan penggunaan berdasarkan aktivitas pratinjau.' : 'Ringkasan siswa dan penempatan dari database.'"/>
+@if($role === 'admin')<div class="stats"><x-stat label="Akun aktif" :value="collect($data['accounts'])->where('status', 'Aktif')->count()"/><x-stat label="Aktivitas tercatat" :value="count($data['logs'])"/><x-stat label="Peran" value="4"/></div><section class="panel"><h2>Status akun per peran</h2><div class="table-scroll"><table><caption class="sr-only">Laporan akun</caption><thead><tr><th>Peran</th><th>Total</th><th>Aktif</th><th>Menunggu</th><th>Nonaktif</th></tr></thead><tbody>@foreach($roles as $item)@php($accounts = collect($data['accounts'])->where('role', $item['name']))<tr><td>{{ $item['name'] }}</td><td>{{ $accounts->count() }}</td><td>{{ $accounts->where('status', 'Aktif')->count() }}</td><td>{{ $accounts->where('status', 'Menunggu')->count() }}</td><td>{{ $accounts->where('status', 'Nonaktif')->count() }}</td></tr>@endforeach</tbody></table></div></section>
+@else
+<div class="stats"><x-stat label="Total siswa" :value="$coordinatorStudents->count()"/><x-stat label="Penempatan aktif" :value="$coordinatorPlacements->where('status', 'Aktif')->count()"/><x-stat label="Belum ditempatkan" :value="$coordinatorUnplacedStudents->count()"/></div><section class="panel"><h2>Progres per siswa</h2>
+	@if($coordinatorStudents->isNotEmpty())
+		<div class="table-scroll"><table class="responsive-table"><caption class="sr-only">Daftar siswa dan penempatan dari database</caption><thead><tr><th scope="col">NIS</th><th scope="col">Siswa</th><th scope="col">Tempat PKL</th><th scope="col">Periode</th><th scope="col">Status</th></tr></thead><tbody>@foreach($coordinatorStudents as $student)<tr><td data-label="NIS">{{ $student->nis }}</td><td data-label="Siswa">{{ $student->name }}</td><td data-label="Tempat PKL">{{ $student->placement?->place?->name ?? 'Belum ditempatkan' }}</td><td data-label="Periode">{{ $student->placement?->period?->name ?? 'Belum ditentukan' }}</td><td data-label="Status"><x-badge :status="$student->placement?->status ?? 'Belum ditempatkan'"/></td></tr>@endforeach</tbody></table></div>
+	@else
+		<x-empty title="Belum ada data siswa" description="Daftar laporan akan terisi dari profil siswa yang dimasukkan Koordinator."/>
+	@endif
+</section>
+<x-alert>Data absensi dan jurnal belum tersambung ke database, jadi belum disertakan dalam laporan ini.</x-alert>
+@endif
+<div class="actions"><x-button variant="secondary" disabled>Ekspor PDF</x-button><x-button variant="secondary" disabled>Ekspor CSV</x-button></div><p class="muted">Ekspor belum tersedia.</p>
