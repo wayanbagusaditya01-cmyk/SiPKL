@@ -14,12 +14,12 @@
 
 <section class="panel">
     <div class="toolbar" style="margin-bottom: 20px;">
-        <div style="display: flex; gap: 8px; align-items: center;">
-            <a href="{{ route('student.notifications.index') }}" class="button {{ !$filterUnread ? 'primary' : 'secondary' }}" style="padding: 6px 14px; font-size: 13px;">Semua</a>
-            <a href="{{ route('student.notifications.index', ['unread' => 1]) }}" class="button {{ $filterUnread ? 'primary' : 'secondary' }}" style="padding: 6px 14px; font-size: 13px;">
-                Belum dibaca @if($unreadCount > 0)<span class="badge" style="margin-left: 6px; padding: 1px 7px; font-size: 11px;">{{ $unreadCount }}</span>@endif
+        <nav class="segmented" aria-label="Saring notifikasi">
+            <a href="{{ route('student.notifications.index') }}" @if(!$filterUnread) aria-current="page" @endif>Semua</a>
+            <a href="{{ route('student.notifications.index', ['unread' => 1]) }}" @if($filterUnread) aria-current="page" @endif>
+                Belum dibaca @if($unreadCount > 0)<span class="badge blue">{{ $unreadCount }}</span>@endif
             </a>
-        </div>
+        </nav>
     </div>
 
     @if($notifications->isNotEmpty())
@@ -43,12 +43,16 @@
                     </div>
                     <div style="display: flex; align-items: center; gap: 12px; margin-left: auto;">
                         @if($item->link)
-                            <a href="{{ route('student.notifications.read', $item) }}" class="button secondary" style="padding: 6px 12px; font-size: 13px;">Buka</a>
+                            <form method="post" action="{{ route('student.notifications.read', $item) }}">
+                                @csrf
+                                @method('PATCH')
+                                <x-action variant="primary" icon="external">Buka</x-action>
+                            </form>
                         @elseif(!$item->isRead())
                             <form method="post" action="{{ route('student.notifications.read', $item) }}">
                                 @csrf
                                 @method('PATCH')
-                                <button type="submit" class="row-action" style="background:none;border:none;cursor:pointer;color:var(--primary);font:inherit;font-size:13px;padding:0;">Tandai dibaca</button>
+                                <x-action icon="check">Tandai dibaca</x-action>
                             </form>
                         @endif
                     </div>

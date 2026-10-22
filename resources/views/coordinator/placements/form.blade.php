@@ -6,7 +6,7 @@
 
 @section('content')
 <x-page-heading :title="$editing ? 'Ubah Penempatan' : 'Tambah Penempatan'" description="Pilih periode dan pembina yang sesuai dengan tempat PKL siswa."/>
-<section class="panel form-width"><form method="post" action="{{ $editing ? route('coordinator.penempatan.update', $placement) : route('coordinator.penempatan.store') }}">
+<div class="form-layout"><section class="panel"><form method="post" action="{{ $editing ? route('coordinator.penempatan.update', $placement) : route('coordinator.penempatan.store') }}">
     @csrf
     @if($editing) @method('PUT') @endif
     <div class="form-grid">
@@ -20,4 +20,10 @@
     </div>
     <div class="actions"><x-button type="submit">{{ $editing ? 'Simpan perubahan' : 'Simpan Penempatan' }}</x-button><x-button variant="secondary" :href="route('coordinator.penempatan.index')">Batal</x-button></div>
 </form></section>
+<x-form-guide :items="[
+    'Setiap siswa hanya memiliki satu penempatan.',
+    'Pembina industri yang dipilih harus terdaftar di tempat PKL yang sama.',
+    'Siswa dapat absen dan menulis jurnal setelah penempatannya berstatus Aktif.',
+    'Pembina yang dipilih dapat langsung melihat siswa ini di portalnya.',
+]"/></div>
 @endsection

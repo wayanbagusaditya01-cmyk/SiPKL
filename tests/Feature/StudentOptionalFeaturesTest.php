@@ -239,8 +239,42 @@ class StudentOptionalFeaturesTest extends TestCase
 
         $this->get(route('student.notifications.index', ['unread' => 1]))
             ->assertOk()
-            ->assertSee('Jurnal Disetujui')
-            ->assertDontSee('Pengumuman Lama');
+            ->assertViewHas('notifications', fn ($notifications) => $notifications->pluck('title')->all() === ['Jurnal Disetujui']);
+    }
+
+    public function test_notification_bell_opens_a_popover_with_recent_notifications(): void
+    {
+        $studentData = $this->createLinkedStudent();
+        $notification = Notification::factory()->create([
+            'user_id' => $studentData['user']->id,
+            'title' => 'Nilai PKL diterbitkan',
+            'read_at' => null,
+        ]);
+
+        $this->actingAs($studentData['user'])
+            ->get(route('student.portal.dashboard'))
+            ->assertOk()
+            ->assertSee('id="notification-popover"', false)
+            ->assertSee('Nilai PKL diterbitkan')
+            ->assertSee('Notifikasi (1 belum dibaca)')
+            ->assertSee(route('student.notifications.read', $notification));
+
+        $this->from(route('student.portal.dashboard'))
+            ->post(route('student.notifications.readAll'))
+            ->assertRedirect(route('student.portal.dashboard'));
+
+        $this->assertNotNull($notification->fresh()->read_at);
+    }
+
+    public function test_account_menu_links_to_the_users_profile_and_logout(): void
+    {
+        $studentData = $this->createLinkedStudent();
+
+        $this->actingAs($studentData['user'])
+            ->get(route('student.journals.index'))
+            ->assertSee('id="account-popover"', false)
+            ->assertSee(route('student.profile.edit'))
+            ->assertSee($studentData['user']->email);
     }
 
     public function test_student_can_mark_notification_as_read(): void
@@ -257,6 +291,20 @@ class StudentOptionalFeaturesTest extends TestCase
             ->assertRedirect(route('student.portal.grade'));
 
         $this->assertNotNull($notif->fresh()->read_at);
+    }
+
+    public function test_notification_links_stay_on_the_current_site(): void
+    {
+        $studentData = $this->createLinkedStudent();
+        $notif = Notification::factory()->create([
+            'user_id' => $studentData['user']->id,
+            'link' => 'http://108.136.232.241/siswa/jurnal?status=Menunggu',
+            'read_at' => null,
+        ]);
+
+        $this->actingAs($studentData['user'])
+            ->patch(route('student.notifications.read', $notif))
+            ->assertRedirect(url('/siswa/jurnal?status=Menunggu'));
     }
 
     public function test_student_can_mark_all_notifications_as_read(): void

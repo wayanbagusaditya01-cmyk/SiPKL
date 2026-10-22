@@ -3,14 +3,18 @@
 @section('title', 'Ringkasan')
 
 @section('content')
-<x-page-heading title="Ringkasan Operasional PKL" description="Pantau progres penempatan siswa dan master data PKL secara langsung dari database."/>
-
-<div class="stats four">
-    <x-stat label="Siswa peserta" :value="$students->count().' siswa'"/>
-    <x-stat label="Penempatan aktif" :value="$activePlacementCount.' siswa'"/>
-    <x-stat label="Belum ditempatkan" :value="$unplacedStudents->count().' siswa'"/>
-    <x-stat label="Tempat PKL" :value="$placeCount.' lokasi'"/>
-</div>
+<x-hero :name="auth()->user()->name" :description="'Ringkasan Operasional PKL · '.($unplacedStudents->isEmpty() ? 'Semua siswa sudah ditempatkan' : $unplacedStudents->count().' siswa menunggu penempatan')">
+    <x-slot:actions>
+        <x-button :href="route('coordinator.penempatan.create')"><x-icon name="plus"/>Tambah penempatan</x-button>
+        <x-button variant="secondary" :href="route('coordinator.siswa.index')"><x-icon name="users"/>Data siswa</x-button>
+    </x-slot:actions>
+    <x-slot:stats>
+        <x-hero-stat icon="users" label="Siswa peserta" :value="$students->count()" :href="route('coordinator.siswa.index')"/>
+        <x-hero-stat icon="check" label="Penempatan aktif" :value="$activePlacementCount" :href="route('coordinator.penempatan.index')"/>
+        <x-hero-stat icon="info" label="Belum ditempatkan" :value="$unplacedStudents->count()" :href="route('coordinator.penempatan.create')"/>
+        <x-hero-stat icon="place" label="Tempat PKL" :value="$placeCount" :href="route('coordinator.tempat.index')"/>
+    </x-slot:stats>
+</x-hero>
 
 <div class="content-grid">
     <section class="panel">
@@ -30,7 +34,7 @@
                     <small>{{ $student->nis }} · {{ $student->class }}</small>
                 </div>
                 <x-badge status="Belum ditempatkan"/>
-                <a class="row-action" href="{{ route('coordinator.penempatan.create') }}">Tempatkan</a>
+                <x-action :href="route('coordinator.penempatan.create')" variant="primary" icon="plus">Tempatkan</x-action>
             </div>
         @empty
             <x-empty title="Semua siswa sudah ditempatkan" description="Tidak ada siswa terdaftar yang menunggu penempatan saat ini."/>
@@ -38,7 +42,7 @@
 
         @if($unplacedStudents->count() > 5)
             <div style="margin-top: 16px; text-align: center;">
-                <a href="{{ route('coordinator.siswa.index') }}" class="row-action">Lihat semua siswa ({{ $unplacedStudents->count() }} belum ditempatkan)</a>
+                <x-action :href="route('coordinator.siswa.index')" icon="users">Lihat semua siswa ({{ $unplacedStudents->count() }} belum ditempatkan)</x-action>
             </div>
         @endif
     </section>

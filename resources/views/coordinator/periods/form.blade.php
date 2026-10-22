@@ -6,7 +6,7 @@
 
 @section('content')
 <x-page-heading :title="$editing ? 'Ubah Periode PKL' : 'Tambah Periode PKL'" description="Tanggal selesai harus setelah tanggal mulai."/>
-<section class="panel form-width"><form method="post" action="{{ $editing ? route('coordinator.periode.update', $period) : route('coordinator.periode.store') }}">
+<div class="form-layout"><section class="panel"><form method="post" action="{{ $editing ? route('coordinator.periode.update', $period) : route('coordinator.periode.store') }}">
     @csrf
     @if($editing) @method('PUT') @endif
     <div class="form-grid">
@@ -18,4 +18,10 @@
     </div>
     <div class="actions"><x-button type="submit">{{ $editing ? 'Simpan perubahan' : 'Simpan Periode' }}</x-button><x-button variant="secondary" :href="route('coordinator.periode.index')">Batal</x-button></div>
 </form></section>
+<x-form-guide :items="[
+    'Nama periode harus unik, misalnya PKL Semester Ganjil 2026.',
+    'Tahun ajaran ditulis dengan format 2026/2027.',
+    'Tanggal selesai harus setelah tanggal mulai.',
+    'Siswa hanya dapat absen dan menulis jurnal pada periode berstatus Aktif.',
+]"/></div>
 @endsection

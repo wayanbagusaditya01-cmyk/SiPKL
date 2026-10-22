@@ -7,7 +7,7 @@
 @section('content')
 <x-page-heading :title="$editing ? 'Ubah Akun' : 'Buat Akun'" description="Akun menggunakan email dan peran yang ditetapkan Admin."/>
 
-<section class="panel form-width">
+<div class="form-layout"><section class="panel">
     <form method="post" action="{{ $editing ? route('admin.accounts.update', $account) : route('admin.accounts.store') }}">
         @csrf
         @if($editing) @method('PUT') @endif
@@ -26,4 +26,11 @@
         </div>
     </form>
 </section>
+<x-form-guide :items="[
+    'Email dipakai untuk masuk dan harus unik.',
+    'Kata sandi minimal 12 karakter.',
+    'Akun siswa otomatis dibuatkan profil siswa.',
+    'Profil pembina dihubungkan Koordinator PKL melalui menu Data Pembina.',
+    'Akun nonaktif tidak dapat masuk ke SIPKL.',
+]"/></div>
 @endsection

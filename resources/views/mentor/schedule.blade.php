@@ -66,7 +66,7 @@
                 <form method="post" action="{{ route('mentor.schedule.holidays.destroy', $holiday) }}">
                     @csrf
                     @method('DELETE')
-                    <button type="submit" class="icon-button" aria-label="Hapus libur {{ $holiday->name }}"><x-icon name="trash"/></button>
+                    <x-action variant="danger" icon="trash" aria-label="Hapus libur {{ $holiday->name }}">Hapus</x-action>
                 </form>
             </div>
         @empty

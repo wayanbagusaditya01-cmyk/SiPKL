@@ -2,9 +2,9 @@
    Absensi siswa (lokasi + GSAP)
    ========================================================================== */
 .attend {
-    --attend-ink: #0b1220;
-    --attend-deep: #131c35;
-    --attend-blue: #60a5fa;
+    --attend-ink: var(--navy-950);
+    --attend-deep: var(--navy-900);
+    --attend-blue: #8fb0e3;
     --attend-ok: #34d399;
     --attend-warn: #fbbf24;
     --attend-soft-text: rgba(226, 232, 240, 0.7);
@@ -32,12 +32,12 @@
     justify-items: center;
     gap: 4px;
     padding: 24px 24px 20px;
-    border-radius: 28px;
+    border-radius: 20px;
     color: #f8fafc;
     text-align: center;
     background:
         radial-gradient(90% 60% at 50% 55%, color-mix(in srgb, var(--attend-zone) 16%, transparent), transparent 70%),
-        linear-gradient(160deg, var(--attend-ink), var(--attend-deep) 60%, #172554);
+        linear-gradient(160deg, var(--attend-ink), var(--attend-deep) 60%, var(--navy-800));
     box-shadow: 0 30px 60px -32px rgba(15, 23, 42, 0.6);
     transition: background 0.6s ease;
 }
@@ -145,8 +145,8 @@
     color: #fff;
     font-size: 16px;
     font-weight: 700;
-    background: radial-gradient(circle at 30% 25%, #60a5fa, #2563eb 55%, #1d4ed8);
-    box-shadow: 0 18px 40px -12px rgba(37, 99, 235, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    background: radial-gradient(circle at 30% 25%, var(--navy-600), var(--navy-700) 55%, var(--navy-800));
+    box-shadow: 0 18px 40px -12px rgba(10, 22, 48, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 .attend-button svg {
     width: 28px;
@@ -357,7 +357,7 @@
 }
 .attend-stat {
     padding: 16px 18px;
-    border-radius: 18px;
+    border-radius: 14px;
     background: var(--surface);
     border: 1px solid var(--border);
 }
@@ -374,7 +374,7 @@
 }
 .attend-history {
     padding: 8px 20px 12px;
-    border-radius: 20px;
+    border-radius: 16px;
     background: var(--surface);
     border: 1px solid var(--border);
 }

@@ -3,16 +3,18 @@
 @section('title', 'Ringkasan Sistem')
 
 @section('content')
-<x-page-heading title="Ringkasan Sistem" description="Status akun pengguna, distribusi peran, dan aktivitas sistem yang tersimpan di database.">
-    <x-button :href="route('admin.accounts.create')"><x-icon name="plus"/>Buat Akun</x-button>
-</x-page-heading>
-
-<div class="stats four">
-    <x-stat label="Total akun" :value="$stats['totalAccounts'].' akun'"/>
-    <x-stat label="Akun aktif" :value="$stats['activeAccounts'].' aktif'"/>
-    <x-stat label="Akun nonaktif" :value="$stats['inactiveAccounts'].' nonaktif'"/>
-    <x-stat label="Penempatan PKL" :value="$stats['totalPlacements'].' siswa'"/>
-</div>
+<x-hero :name="auth()->user()->name" description="Ringkasan Sistem · Status akun pengguna, distribusi peran, dan aktivitas sistem.">
+    <x-slot:actions>
+        <x-button :href="route('admin.accounts.create')"><x-icon name="plus"/>Buat Akun</x-button>
+        <x-button variant="secondary" :href="route('admin.logs.index')"><x-icon name="file"/>Log aktivitas</x-button>
+    </x-slot:actions>
+    <x-slot:stats>
+        <x-hero-stat icon="users" label="Total akun" :value="$stats['totalAccounts']" :href="route('admin.accounts.index')"/>
+        <x-hero-stat icon="check" label="Akun aktif" :value="$stats['activeAccounts']" :href="route('admin.accounts.index', ['status' => 'active'])"/>
+        <x-hero-stat icon="lock" label="Akun nonaktif" :value="$stats['inactiveAccounts']" :href="route('admin.accounts.index', ['status' => 'inactive'])"/>
+        <x-hero-stat icon="place" label="Penempatan PKL" :value="$stats['totalPlacements']" :href="route('admin.reports.index')"/>
+    </x-slot:stats>
+</x-hero>
 
 <div class="content-grid">
     <section class="panel">
@@ -38,7 +40,7 @@
                             <small>{{ $studentUser->email }} · Profil Siswa belum terhubung</small>
                         </div>
                         <x-badge :status="$studentUser->status ? 'Aktif' : 'Nonaktif'"/>
-                        <a class="row-action" href="{{ route('admin.accounts.show', $studentUser) }}">Periksa</a>
+                        <x-action :href="route('admin.accounts.show', $studentUser)" icon="eye">Periksa</x-action>
                     </div>
                 @endforeach
 
@@ -50,7 +52,7 @@
                             <small>{{ $mentorUser->email }} · Profil Pembina belum terhubung</small>
                         </div>
                         <x-badge :status="$mentorUser->status ? 'Aktif' : 'Nonaktif'"/>
-                        <a class="row-action" href="{{ route('admin.accounts.show', $mentorUser) }}">Periksa</a>
+                        <x-action :href="route('admin.accounts.show', $mentorUser)" icon="eye">Periksa</x-action>
                     </div>
                 @endforeach
 
@@ -64,7 +66,7 @@
                         <x-badge status="Nonaktif"/>
                         <form method="POST" action="{{ route('admin.accounts.toggle-status', $inactiveUser) }}" style="margin: 0;">
                             @csrf
-                            <button type="submit" class="row-action" style="background: none; border: none; cursor: pointer; color: var(--primary);">Aktivasi</button>
+                            <x-action variant="success" icon="check">Aktivasi</x-action>
                         </form>
                     </div>
                 @endforeach

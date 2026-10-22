@@ -6,7 +6,7 @@
 
 @section('content')
 <x-page-heading :title="$editing ? 'Ubah Data Pembina' : 'Tambah Pembina'" description="Profil Pembina harus terhubung ke akun aktif yang dibuat Admin."/>
-<section class="panel form-width"><form method="post" action="{{ $editing ? route('coordinator.pembina.update', $mentor) : route('coordinator.pembina.store') }}">
+<div class="form-layout"><section class="panel"><form method="post" action="{{ $editing ? route('coordinator.pembina.update', $mentor) : route('coordinator.pembina.store') }}">
     @csrf
     @if($editing) @method('PUT') @endif
     <div class="form-grid">
@@ -19,4 +19,10 @@
     </div>
     <div class="actions"><x-button type="submit">{{ $editing ? 'Simpan perubahan' : 'Simpan Pembina' }}</x-button><x-button variant="secondary" :href="route('coordinator.pembina.index')">Batal</x-button></div>
 </form></section>
+<x-form-guide :items="[
+    'Akun harus berperan Pembina Sekolah atau Pembina Industri dan berstatus aktif.',
+    'Tipe pembina harus sesuai dengan peran akunnya.',
+    'Pembina Sekolah cukup mengisi NIP bila ada.',
+    'Pembina Industri wajib mengisi jabatan, nomor telepon, dan tempat PKL binaan.',
+]"/></div>
 @endsection

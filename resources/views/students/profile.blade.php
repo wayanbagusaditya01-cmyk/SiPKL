@@ -3,7 +3,13 @@
 @section('title', 'Profil Saya')
 
 @section('content')
-<x-page-heading title="Profil Saya" description="Informasi data akademik, penempatan PKL, dan pengaturan akun siswa."/>
+<x-profile-header :name="$student->name" role="Siswa PKL" :subtitle="$user->email">
+    <x-slot:meta>
+        <div><dt>NIS</dt><dd>{{ $student->nis }}</dd></div>
+        <div><dt>Kelas</dt><dd>{{ $student->class }}</dd></div>
+        <div><dt>Tempat PKL</dt><dd>{{ $student->placement?->place?->name ?? 'Belum ditempatkan' }}</dd></div>
+    </x-slot:meta>
+</x-profile-header>
 
 <div class="content-grid">
     <section class="panel">

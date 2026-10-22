@@ -49,8 +49,8 @@
             <svg viewBox="0 0 300 300" aria-hidden="true">
                 <defs>
                     <linearGradient id="attend-sweep" x1="0" y1="0" x2="1" y2="0">
-                        <stop offset="0%" stop-color="#60a5fa" stop-opacity="0"/>
-                        <stop offset="100%" stop-color="#60a5fa" stop-opacity=".35"/>
+                        <stop offset="0%" stop-color="#8fb0e3" stop-opacity="0"/>
+                        <stop offset="100%" stop-color="#8fb0e3" stop-opacity=".35"/>
                     </linearGradient>
                 </defs>
                 <g class="attend-dial__rings" data-rings>

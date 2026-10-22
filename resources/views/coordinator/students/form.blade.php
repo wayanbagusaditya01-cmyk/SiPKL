@@ -7,7 +7,7 @@
 @section('content')
 <x-page-heading :title="$editing ? 'Ubah Data Siswa' : 'Tambah Siswa'" description="Profil siswa dapat disimpan sebelum akun login dibuat. Penempatan dikelola melalui menu Penempatan."/>
 
-<section class="panel form-width">
+<div class="form-layout"><section class="panel">
     <form method="post" action="{{ $editing ? route('coordinator.siswa.update', $student) : route('coordinator.siswa.store') }}">
         @csrf
         @if($editing) @method('PUT') @endif
@@ -25,4 +25,10 @@
         </div>
     </form>
 </section>
+<x-form-guide :items="[
+    'NIS harus unik untuk setiap siswa.',
+    'Kelas dan jurusan dipakai untuk menyaring Data Siswa.',
+    'Akun login bersifat opsional dan dapat dihubungkan kemudian.',
+    'Tempat dan pembina diatur melalui menu Penempatan.',
+]"/></div>
 @endsection

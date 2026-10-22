@@ -24,7 +24,7 @@
                     <td data-label="NIP / Jabatan">{{ $mentor->type === 'Sekolah' ? ($mentor->nip ?: 'Belum diisi') : ($mentor->position ?: 'Belum diisi') }}</td>
                     <td data-label="Email">{{ $mentor->user->email }}</td>
                     <td data-label="Tempat PKL">{{ $mentor->place?->name ?? 'Sekolah' }}</td>
-                    <td data-label="Tindakan"><a class="row-action" href="{{ route('coordinator.pembina.edit', $mentor) }}">Ubah data</a></td>
+                    <td data-label="Tindakan"><x-action :href="route('coordinator.pembina.edit', $mentor)" icon="edit">Ubah</x-action></td>
                 </tr>
             @endforeach</tbody>
         </table></div>

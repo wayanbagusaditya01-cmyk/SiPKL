@@ -4,7 +4,7 @@
 
 @section('content')
 <x-page-heading title="Master Data Sistem" description="Nilai referensi dan konfigurasi data lintas modul yang tersimpan dan dikelola langsung pada database.">
-    <button type="button" class="button" onclick="document.getElementById('new-reference-modal').scrollIntoView({ behavior: 'smooth' })">
+    <button type="button" class="button primary" onclick="document.getElementById('new-reference-modal').scrollIntoView({ behavior: 'smooth' })">
         <x-icon name="plus"/>Tambah Data Referensi
     </button>
 </x-page-heading>
@@ -69,14 +69,15 @@
                                     </td>
                                     <td data-label="Sifat">
                                         @if($item->is_system)
-                                            <span style="font-size: 11px; background: #e0f2fe; color: #0284c7; padding: 2px 6px; border-radius: 4px;">Sistem</span>
+                                            <span class="badge blue">Sistem</span>
                                         @else
-                                            <span style="font-size: 11px; background: #dcfce7; color: #15803d; padding: 2px 6px; border-radius: 4px;">Kustom</span>
+                                            <span class="badge">Kustom</span>
                                         @endif
                                     </td>
                                     <td data-label="Tindakan">
+                                        <div class="row-actions" style="align-items: flex-start;">
                                         <details style="position: relative;">
-                                            <summary class="row-action" style="cursor: pointer; list-style: none;">Ubah</summary>
+                                            <summary class="action-btn action-btn--default"><x-icon name="edit"/><span>Ubah</span></summary>
                                             <div style="margin-top: 8px; padding: 12px; background: #f8fafc; border: 1px solid var(--border, #cbd5e1); border-radius: 8px;">
                                                 <form method="POST" action="{{ route('admin.master-data.update', $item) }}">
                                                     @csrf
@@ -95,12 +96,13 @@
                                         </details>
 
                                         @if(!$item->is_system)
-                                            <form method="POST" action="{{ route('admin.master-data.destroy', $item) }}" onsubmit="return confirm('Hapus master data {{ $item->name }}?');" style="display: inline; margin-left: 8px;">
+                                            <form method="POST" action="{{ route('admin.master-data.destroy', $item) }}" onsubmit="return confirm('Hapus master data {{ $item->name }}?');">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="row-action" style="background: none; border: none; cursor: pointer; color: #dc2626;">Hapus</button>
+                                                <x-action variant="danger" icon="trash">Hapus</x-action>
                                             </form>
                                         @endif
+                                        </div>
                                     </td>
                                 </tr>
                             @endforeach

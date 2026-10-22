@@ -6,7 +6,7 @@
 
 @section('content')
 <x-page-heading :title="$editing ? 'Ubah Tempat PKL' : 'Tambah Tempat PKL'" description="Tempat disimpan sebagai master dan dapat dipakai oleh beberapa siswa."/>
-<section class="panel form-width"><form method="post" action="{{ $editing ? route('coordinator.tempat.update', $place) : route('coordinator.tempat.store') }}">
+<div class="form-layout"><section class="panel"><form method="post" action="{{ $editing ? route('coordinator.tempat.update', $place) : route('coordinator.tempat.store') }}">
     @csrf
     @if($editing) @method('PUT') @endif
     <div class="form-grid">
@@ -20,4 +20,10 @@
     </div>
     <div class="actions"><x-button type="submit">{{ $editing ? 'Simpan perubahan' : 'Simpan Tempat' }}</x-button><x-button variant="secondary" :href="route('coordinator.tempat.index')">Batal</x-button></div>
 </form></section>
+<x-form-guide :items="[
+    'Nama tempat harus unik dan dapat dipakai untuk beberapa siswa.',
+    'Isi latitude dan longitude agar siswa dapat absen berbasis lokasi.',
+    'Radius absensi antara 25 sampai 2.000 meter dari titik tempat.',
+    'Pembina Industri dapat memperbarui titik lokasi dan jadwal kerja dari portalnya.',
+]"/></div>
 @endsection

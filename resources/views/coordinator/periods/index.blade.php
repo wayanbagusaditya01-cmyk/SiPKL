@@ -24,7 +24,7 @@
                     <td data-label="Mulai">{{ $period->start_date->format('d-m-Y') }}</td>
                     <td data-label="Selesai">{{ $period->end_date->format('d-m-Y') }}</td>
                     <td data-label="Status"><x-badge :status="$period->status"/></td>
-                    <td data-label="Tindakan"><a class="row-action" href="{{ route('coordinator.periode.edit', $period) }}">Ubah data</a></td>
+                    <td data-label="Tindakan"><x-action :href="route('coordinator.periode.edit', $period)" icon="edit">Ubah</x-action></td>
                 </tr>
             @endforeach</tbody>
         </table></div>

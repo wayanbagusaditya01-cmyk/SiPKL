@@ -3,20 +3,13 @@
 @section('title', 'Profil Admin')
 
 @section('content')
-<x-page-heading title="Profil Admin" description="Identitas akun administrator dan pengaturan keamanan kata sandi."/>
-
-@if(session('success'))
-    <x-alert type="success">{{ session('success') }}</x-alert>
-@endif
-@if($errors->any())
-    <x-alert type="error">
-        <ul>
-            @foreach($errors->all() as $error)
-                <li>{{ $error }}</li>
-            @endforeach
-        </ul>
-    </x-alert>
-@endif
+<x-profile-header :name="$user->name" role="Administrator Sistem" :subtitle="$user->email">
+    <x-slot:meta>
+        <div><dt>Telepon</dt><dd>{{ $user->phone ?: 'Belum diisi' }}</dd></div>
+        <div><dt>Status</dt><dd>{{ $user->status ? 'Aktif' : 'Nonaktif' }}</dd></div>
+        <div><dt>Terdaftar</dt><dd>{{ $user->created_at?->translatedFormat('j M Y') ?? '-' }}</dd></div>
+    </x-slot:meta>
+</x-profile-header>
 
 <div class="content-grid" style="align-items: flex-start;">
     <section class="panel">

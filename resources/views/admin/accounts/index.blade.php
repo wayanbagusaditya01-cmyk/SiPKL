@@ -91,24 +91,20 @@
                                 <x-badge :status="$user->status ? 'Aktif' : 'Nonaktif'"/>
                             </td>
                             <td data-label="Tindakan">
-                                <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-                                    <a class="row-action" href="{{ route('admin.accounts.show', $user) }}">Detail</a>
-                                    <a class="row-action" href="{{ route('admin.accounts.edit', $user) }}">Ubah</a>
+                                <div class="row-actions">
+                                    <x-action :href="route('admin.accounts.show', $user)" icon="eye">Detail</x-action>
+                                    <x-action :href="route('admin.accounts.edit', $user)" icon="edit">Ubah</x-action>
 
                                     @if(!$isSelf)
-                                        <form method="POST" action="{{ route('admin.accounts.toggle-status', $user) }}" style="display: inline; margin: 0;">
+                                        <form method="POST" action="{{ route('admin.accounts.toggle-status', $user) }}">
                                             @csrf
-                                            <button type="submit" class="row-action" style="background: none; border: none; cursor: pointer; color: {{ $user->status ? '#dc2626' : '#16a34a' }};">
-                                                {{ $user->status ? 'Nonaktifkan' : 'Aktifkan' }}
-                                            </button>
+                                            <x-action :variant="$user->status ? 'warning' : 'success'" :icon="$user->status ? 'power' : 'check'">{{ $user->status ? 'Nonaktifkan' : 'Aktifkan' }}</x-action>
                                         </form>
 
-                                        <form method="POST" action="{{ route('admin.accounts.destroy', $user) }}" onsubmit="return confirm('Apakah Anda yakin ingin menghapus akun {{ $user->name }}? Tindakan ini tidak dapat dibatalkan.');" style="display: inline; margin: 0;">
+                                        <form method="POST" action="{{ route('admin.accounts.destroy', $user) }}" onsubmit="return confirm('Apakah Anda yakin ingin menghapus akun {{ $user->name }}? Tindakan ini tidak dapat dibatalkan.');">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="row-action" style="background: none; border: none; cursor: pointer; color: #dc2626;">
-                                                Hapus
-                                            </button>
+                                            <x-action variant="danger" icon="trash">Hapus</x-action>
                                         </form>
                                     @endif
                                 </div>

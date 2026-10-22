@@ -50,7 +50,7 @@
                             <td data-label="Tempat PKL">{{ $student->placement?->place?->name ?? 'Belum ditempatkan' }}</td>
                             <td data-label="Email">{{ $student->email ?: 'Belum diisi' }}</td>
                             <td data-label="Akun">{{ $student->user?->email ?? 'Belum ditautkan' }}</td>
-                            <td data-label="Tindakan"><a class="row-action" href="{{ route('coordinator.siswa.edit', $student) }}">Ubah data</a></td>
+                            <td data-label="Tindakan"><x-action :href="route('coordinator.siswa.edit', $student)" icon="edit">Ubah</x-action></td>
                         </tr>
                     @endforeach
                 </tbody>

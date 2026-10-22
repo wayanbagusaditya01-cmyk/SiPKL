@@ -3,7 +3,13 @@
 @section('title', 'Profil Saya')
 
 @section('content')
-<x-page-heading title="Profil Saya" :description="'Data akun dan profil Anda sebagai '.$mentor->typeLabel().'.'"/>
+<x-profile-header :name="$user->name" :role="$mentor->typeLabel()" :subtitle="$user->email">
+    <x-slot:meta>
+        <div><dt>{{ $mentor->isIndustry() ? 'Jabatan' : 'NIP' }}</dt><dd>{{ ($mentor->isIndustry() ? $mentor->position : $mentor->nip) ?: 'Belum diisi' }}</dd></div>
+        <div><dt>{{ $mentor->isIndustry() ? 'Tempat PKL' : 'Sekolah' }}</dt><dd>{{ $mentor->isIndustry() ? ($mentor->place?->name ?? 'Belum ditetapkan') : 'SMK TI Bali Global Badung' }}</dd></div>
+        <div><dt>Siswa dibimbing</dt><dd>{{ $mentor->guidedPlacements()->count() }} siswa</dd></div>
+    </x-slot:meta>
+</x-profile-header>
 
 <div class="content-grid">
     <section class="panel">

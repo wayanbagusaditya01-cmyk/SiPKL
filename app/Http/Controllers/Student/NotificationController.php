@@ -31,7 +31,11 @@ class NotificationController extends Controller
         $ownedNotification->markAsRead();
 
         if ($ownedNotification->link) {
-            return redirect()->to($ownedNotification->link);
+            // Hanya jalur di situs ini yang dipakai, agar tautan lama tetap benar saat domain berganti.
+            $path = parse_url($ownedNotification->link, PHP_URL_PATH) ?: '/';
+            $query = parse_url($ownedNotification->link, PHP_URL_QUERY);
+
+            return redirect()->to($path.($query ? '?'.$query : ''));
         }
 
         return redirect()->route('student.notifications.index')->with('success', 'Notifikasi telah ditandai dibaca.');
@@ -42,7 +46,7 @@ class NotificationController extends Controller
         $user = $this->studentUser($request);
         $user->unreadNotifications()->update(['read_at' => now()]);
 
-        return redirect()->route('student.notifications.index')->with('success', 'Semua notifikasi telah ditandai sebagai dibaca.');
+        return back(fallback: route('student.notifications.index'))->with('success', 'Semua notifikasi telah ditandai sebagai dibaca.');
     }
 
     private function studentUser(Request $request): User

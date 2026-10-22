@@ -23,7 +23,7 @@
                     <td data-label="Alamat">{{ $place->address ?: 'Belum diisi' }}</td>
                     <td data-label="Koordinat">{{ $place->latitude && $place->longitude ? $place->latitude.', '.$place->longitude : 'Belum diisi' }}</td>
                     <td data-label="Kontak">{{ $place->contact ?: $place->email ?: 'Belum diisi' }}</td>
-                    <td data-label="Tindakan"><a class="row-action" href="{{ route('coordinator.tempat.edit', $place) }}">Ubah data</a></td>
+                    <td data-label="Tindakan"><x-action :href="route('coordinator.tempat.edit', $place)" icon="edit">Ubah</x-action></td>
                 </tr>
             @endforeach</tbody>
         </table></div>

@@ -6,6 +6,9 @@
     <meta name="robots" content="noindex, nofollow">
     <title>@yield('title', 'SIPKL') | Pratinjau SIPKL</title>
     <link rel="icon" type="image/svg+xml" href="{{ asset('assets/book-open.svg') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body>

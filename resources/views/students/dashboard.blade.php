@@ -3,14 +3,26 @@
 @section('title', 'Ringkasan PKL Saya')
 
 @section('content')
-@php($attendanceSummary = $presentCount.' / '.$attendanceCount.' hari')
-<x-page-heading title="Ringkasan PKL Saya" description="Kegiatan dan progres yang tersimpan pada akunmu."/>
-
-<div class="stats">
-    <x-stat label="Kehadiran tercatat" :value="$attendanceSummary"/>
-    <x-stat label="Jurnal tersimpan" :value="$journalCount.' entri'"/>
-    <x-stat label="Jurnal menunggu" :value="$waitingJournalsCount.' entri'"/>
-</div>
+@php
+    $todayAttendance = $attendances->first(fn ($attendance) => $attendance->attendance_date->isToday());
+    $todayStatus = match (true) {
+        $todayAttendance?->status === 'Izin' => 'Hari ini izin',
+        $todayAttendance?->time_out !== null => 'Absensi hari ini selesai',
+        $todayAttendance !== null => 'Sudah absen masuk '.$todayAttendance->time_in,
+        default => 'Belum absen hari ini',
+    };
+@endphp
+<x-hero :name="$student->name" :description="($student->placement?->place?->name ? 'PKL di '.$student->placement->place->name.' · ' : '').$todayStatus">
+    <x-slot:actions>
+        <x-button :href="route('student.attendance.index')"><x-icon name="place"/>{{ $todayAttendance ? 'Buka absensi' : 'Absen sekarang' }}</x-button>
+        <x-button variant="secondary" :href="route('student.journals.index')"><x-icon name="book"/>Tulis jurnal</x-button>
+    </x-slot:actions>
+    <x-slot:stats>
+        <x-hero-stat icon="calendar" label="Hari hadir" :value="$presentCount" :unit="'/ '.$attendanceCount" :href="route('student.attendance.index')"/>
+        <x-hero-stat icon="book" label="Jurnal tersimpan" :value="$journalCount" :href="route('student.journals.index')"/>
+        <x-hero-stat icon="info" label="Jurnal menunggu tinjauan" :value="$waitingJournalsCount" :href="route('student.journals.index')"/>
+    </x-slot:stats>
+</x-hero>
 
 @if($student->placement)
     <section class="panel placement-summary">

@@ -7,13 +7,22 @@
 @if(!$student->placement)
     <section class="panel"><x-empty title="Pembina belum tersedia" description="Pembina akan muncul setelah penempatan ditetapkan."/></section>
 @else
-    <div class="two-column">
-        @foreach([['label' => 'Pembina sekolah', 'mentor' => $student->placement->schoolMentor], ['label' => 'Pembina industri', 'mentor' => $student->placement->industryMentor]] as $item)
-            <section class="panel"><span class="round-icon"><x-icon name="user"/></span><p class="muted">{{ $item['label'] }}</p>
-                @if($item['mentor'])<h2>{{ $item['mentor']->user->name }}</h2><dl><dt>Email</dt><dd>{{ $item['mentor']->user->email }}</dd><dt>Telepon</dt><dd>{{ $item['mentor']->phone ?: 'Belum dicatat' }}</dd><dt>Jabatan / NIP</dt><dd>{{ $item['mentor']->position ?: ($item['mentor']->nip ?: 'Belum dicatat') }}</dd></dl>
-                @else<h2>Belum ditetapkan</h2><p class="muted">Koordinator belum memilih {{ $item['label'] }}.</p>@endif
-            </section>
-        @endforeach
+    <div class="mentor-grid">
+        <x-person-card label="Pembina Sekolah" :mentor="$student->placement->schoolMentor"/>
+        <x-person-card label="Pembina Industri" :mentor="$student->placement->industryMentor"/>
     </div>
+    <section class="panel role-guide">
+        <h2>Peran pembina selama PKL</h2>
+        <div class="role-guide__grid">
+            <div>
+                <span class="info-item__icon" aria-hidden="true"><x-icon name="book"/></span>
+                <div><strong>Pembina Sekolah</strong><p>Guru pembimbing dari sekolah yang memantau absensi, meninjau jurnal harian, dan memberi nilai PKL.</p></div>
+            </div>
+            <div>
+                <span class="info-item__icon" aria-hidden="true"><x-icon name="briefcase"/></span>
+                <div><strong>Pembina Industri</strong><p>Pembimbing di {{ $student->placement->place->name }} yang mengatur jadwal kerja dan titik lokasi absensi, meninjau jurnal, dan memberi nilai PKL.</p></div>
+            </div>
+        </div>
+    </section>
 @endif
 @endsection

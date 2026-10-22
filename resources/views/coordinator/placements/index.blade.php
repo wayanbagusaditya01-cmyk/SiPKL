@@ -26,7 +26,7 @@
                     <td data-label="Pembina industri">{{ $placement->industryMentor?->user?->name ?? 'Belum diatur' }}</td>
                     <td data-label="Tanggal">{{ $placement->placed_at?->format('d-m-Y') ?? 'Belum diisi' }}</td>
                     <td data-label="Status"><x-badge :status="$placement->status"/></td>
-                    <td data-label="Tindakan"><a class="row-action" href="{{ route('coordinator.penempatan.edit', $placement) }}">Ubah data</a></td>
+                    <td data-label="Tindakan"><x-action :href="route('coordinator.penempatan.edit', $placement)" icon="edit">Ubah</x-action></td>
                 </tr>
             @endforeach</tbody>
         </table></div>
