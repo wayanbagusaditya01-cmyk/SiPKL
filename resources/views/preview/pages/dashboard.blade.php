@@ -1,18 +1,19 @@
 @php
     $ownAttendance = collect($data['attendance'])->where('student', 1);
     $ownJournals = collect($data['journals'])->where('student', 1);
-    $isIndustry = $role === 'pembina' && $mentorScope['type'] === 'Industri';
-    $waiting = collect($data['journals'])->where('status', 'Menunggu')->when($role === 'pembina', fn ($journals) => $journals->filter(fn ($j) => collect($data['placements'])->contains(fn ($p) => $p['student'] === $j['student'] && \App\Support\PreviewMentor::guides($p, $mentorScope))));
-    $title = match ($role) {
-        'siswa' => 'Ringkasan PKL Saya',
-        'pembina' => $isIndustry ? 'Ringkasan Pembimbingan' : 'Ringkasan Bimbingan',
-        'koordinator' => 'Ringkasan Operasional',
+    $isMentor = in_array($role, ['pembina', 'pembina_sekolah', 'pembina_industri']);
+    $isIndustry = $role === 'pembina_industri' || ($role === 'pembina' && $mentorScope['type'] === 'Industri');
+    $waiting = collect($data['journals'])->where('status', 'Menunggu')->when($isMentor, fn ($journals) => $journals->filter(fn ($j) => collect($data['placements'])->contains(fn ($p) => $p['student'] === $j['student'] && \App\Support\PreviewMentor::guides($p, $mentorScope))));
+    $title = match (true) {
+        $role === 'siswa' => 'Ringkasan PKL Saya',
+        $isMentor => $isIndustry ? 'Ringkasan Pembimbingan' : 'Ringkasan Bimbingan',
+        $role === 'koordinator' => 'Ringkasan Operasional',
         default => 'Ringkasan Sistem',
     };
-    $description = match ($role) {
-        'siswa' => 'PKL 2026 · 1 Agustus sampai 31 Oktober 2026',
-        'pembina' => $isIndustry ? 'Kegiatan siswa di tempat PKL yang perlu ditindaklanjuti.' : 'Tugas dan kegiatan siswa yang perlu ditindaklanjuti.',
-        'koordinator' => 'Data siswa dan penempatan yang tersimpan di database.',
+    $description = match (true) {
+        $role === 'siswa' => 'PKL 2026 · 1 Agustus sampai 31 Oktober 2026',
+        $isMentor => $isIndustry ? 'Kegiatan siswa di tempat PKL yang perlu ditindaklanjuti.' : 'Tugas dan kegiatan siswa yang perlu ditindaklanjuti.',
+        $role === 'koordinator' => 'Data siswa dan penempatan yang tersimpan di database.',
         default => 'Status akun dan aktivitas terbaru dalam satu ringkasan.',
     };
 @endphp
@@ -35,7 +36,7 @@
     @endif
     <a class="scenario-link" href="{{ $link('dashboard', ['state' => 'unplaced']) }}">Periksa keadaan belum ada penempatan</a>
     @endif
-@elseif($role === 'pembina')
+@elseif($isMentor)
     @php($guided = collect($data['placements'])->filter(fn ($p) => \App\Support\PreviewMentor::guides($p, $mentorScope)))
     <div class="stats"><x-stat :label="$isIndustry ? 'Siswa magang' : 'Siswa bimbingan'" :value="$guided->count().' siswa'"/><x-stat label="Jurnal menunggu" :value="$waiting->count().' jurnal'"/><x-stat label="Hadir hari ini" :value="collect($data['attendance'])->where('date', config('preview.today'))->where('status', 'Hadir')->whereIn('student', $guided->pluck('student'))->count().' / '.$guided->count()"/></div>
     <div class="content-grid"><section class="panel"><div class="section-heading"><div><h2>Antrean tinjauan</h2><p>Mulai dari jurnal yang menunggu keputusanmu.</p></div><x-button :href="$link('jurnal', ['status' => 'Menunggu'])">Tinjau Jurnal</x-button></div>@forelse($waiting as $journal)<div class="review-row"><span class="avatar">{{ mb_substr($lookup('students', $journal['student'])['name'], 0, 1) }}</span><div><strong>{{ $lookup('students', $journal['student'])['name'] }}</strong><p>{{ $journal['title'] }}</p><small>{{ $journal['date'] }}</small></div><a class="row-action" href="{{ $link('jurnal', ['journal' => $journal['id']]) }}">Tinjau</a></div>@empty<x-empty title="Semua jurnal sudah ditinjau" description="Jurnal baru akan muncul setelah siswa mengirimkannya."/>@endforelse</section><section class="panel"><h2>Perlu tindak lanjut</h2>@foreach($guided as $p)<div class="follow-up"><strong>{{ $lookup('students', $p['student'])['name'] }}</strong><p>{{ collect($data['attendance'])->contains(fn ($a) => $a['student'] === $p['student'] && $a['date'] === config('preview.today')) ? 'Kehadiran hari ini tercatat.' : 'Absensi hari ini belum diisi.' }}</p><a href="{{ $link('siswa', ['detail' => $p['student']]) }}">Lihat siswa</a></div>@endforeach</section></div>

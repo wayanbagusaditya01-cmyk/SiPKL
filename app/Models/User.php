@@ -19,6 +19,29 @@ class User extends Authenticatable
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
+    /**
+     * Peran akun yang menggunakan portal Pembina. "pembina" adalah peran lama
+     * yang tipenya ditentukan oleh profil Mentor.
+     */
+    public const MENTOR_ROLES = ['pembina_sekolah', 'pembina_industri', 'pembina'];
+
+    public function isMentor(): bool
+    {
+        return in_array($this->role, self::MENTOR_ROLES, true);
+    }
+
+    /**
+     * Tipe profil Mentor yang wajib dimiliki akun ini, atau null bila bebas.
+     */
+    public function expectedMentorType(): ?string
+    {
+        return match ($this->role) {
+            'pembina_sekolah' => Mentor::SCHOOL,
+            'pembina_industri' => Mentor::INDUSTRY,
+            default => null,
+        };
+    }
+
     public function activityLogs(): HasMany
     {
         return $this->hasMany(ActivityLog::class)->orderByDesc('created_at');

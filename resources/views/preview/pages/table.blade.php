@@ -1,5 +1,6 @@
 @php
-    $descriptions = ['akun' => 'Buat dan perbarui akun. Profil peran harus lengkap sebelum aktivasi.', 'siswa' => $role === 'pembina' ? ($mentorScope['type'] === 'Industri' ? 'Siswa yang magang di tempat PKL kamu dalam data contoh.' : 'Siswa yang terhubung ke Pembina Sekolah dalam data contoh.') : 'Kelola identitas siswa dan relasinya dengan akun.', 'tempat' => 'Alamat, koordinat, dan kontak tempat kegiatan PKL.', 'pembina' => 'Profil sekolah dan industri tetap berada dalam peran Pembina PKL.', 'periode' => 'Atur rentang tanggal dan status pelaksanaan PKL.', 'penempatan' => 'Satu siswa memiliki satu penempatan sepanjang program sekolah.', 'absensi' => 'Catatan kehadiran dan waktu kegiatan PKL.', 'log-aktivitas' => 'Jejak aktivitas bersifat baca saja dan tidak memuat rahasia.'];
+    $isMentor = in_array($role, ['pembina', 'pembina_sekolah', 'pembina_industri']);
+    $descriptions = ['akun' => 'Buat dan perbarui akun. Profil peran harus lengkap sebelum aktivasi.', 'siswa' => $isMentor ? ($mentorScope['type'] === 'Industri' ? 'Siswa yang magang di tempat PKL kamu dalam data contoh.' : 'Siswa yang terhubung ke Pembina Sekolah dalam data contoh.') : 'Kelola identitas siswa dan relasinya dengan akun.', 'tempat' => 'Alamat, koordinat, dan kontak tempat kegiatan PKL.', 'pembina' => 'Profil pembina sekolah dan industri terhubung dengan akun masing-masing.', 'periode' => 'Atur rentang tanggal dan status pelaksanaan PKL.', 'penempatan' => 'Satu siswa memiliki satu penempatan sepanjang program sekolah.', 'absensi' => 'Catatan kehadiran dan waktu kegiatan PKL.', 'log-aktivitas' => 'Jejak aktivitas bersifat baca saja dan tidak memuat rahasia.'];
     $editing = $form && request('form') !== null;
     $editRecord = $editing && request('form') !== 'new' ? $lookup($form['key'], (int) request('form')) : null;
 @endphp
@@ -46,7 +47,7 @@
         $additionalFilters = match($page) {
             'akun' => ['account_role' => ['Peran akun', collect($data['accounts'])->pluck('role')->unique()->all()]],
             'siswa' => ['class' => ['Kelas', collect($data['students'])->pluck('class')->unique()->all()], 'major' => ['Jurusan', collect($data['students'])->pluck('major')->unique()->all()]],
-            'absensi' => $role === 'pembina' ? ['student' => [$mentorScope['type'] === 'Industri' ? 'Siswa magang' : 'Siswa bimbingan', collect($data['placements'])->filter(fn ($p) => \App\Support\PreviewMentor::guides($p, $mentorScope))->map(fn($p) => $lookup('students', $p['student'])['name'])->all()]] : [],
+            'absensi' => $isMentor ? ['student' => [$mentorScope['type'] === 'Industri' ? 'Siswa magang' : 'Siswa bimbingan', collect($data['placements'])->filter(fn ($p) => \App\Support\PreviewMentor::guides($p, $mentorScope))->map(fn($p) => $lookup('students', $p['student'])['name'])->all()]] : [],
             'log-aktivitas' => ['actor' => ['Akun pelaku', collect($data['logs'])->pluck('actor')->unique()->all()], 'activity' => ['Tindakan', collect($data['logs'])->pluck('action')->unique()->all()], 'entity' => ['Entitas', collect($data['logs'])->pluck('entity')->unique()->all()]],
             default => []
         };

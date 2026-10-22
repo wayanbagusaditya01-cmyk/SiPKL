@@ -25,6 +25,8 @@ class RolePermission extends Model
                 'levels' => [
                     'admin' => 'Kelola',
                     'koordinator' => 'Tidak tersedia',
+                    'pembina_sekolah' => 'Tidak tersedia',
+                    'pembina_industri' => 'Tidak tersedia',
                     'pembina' => 'Tidak tersedia',
                     'siswa' => 'Tidak tersedia',
                 ],
@@ -35,6 +37,8 @@ class RolePermission extends Model
                 'levels' => [
                     'admin' => 'Tidak tersedia',
                     'koordinator' => 'Kelola',
+                    'pembina_sekolah' => 'Baca bimbingan',
+                    'pembina_industri' => 'Baca bimbingan',
                     'pembina' => 'Baca bimbingan',
                     'siswa' => 'Baca milik sendiri',
                 ],
@@ -45,6 +49,8 @@ class RolePermission extends Model
                 'levels' => [
                     'admin' => 'Tidak tersedia',
                     'koordinator' => 'Kelola',
+                    'pembina_sekolah' => 'Baca bimbingan',
+                    'pembina_industri' => 'Baca bimbingan',
                     'pembina' => 'Baca bimbingan',
                     'siswa' => 'Baca milik sendiri',
                 ],
@@ -55,6 +61,8 @@ class RolePermission extends Model
                 'levels' => [
                     'admin' => 'Tidak tersedia',
                     'koordinator' => 'Pantau',
+                    'pembina_sekolah' => 'Pantau bimbingan',
+                    'pembina_industri' => 'Pantau bimbingan',
                     'pembina' => 'Pantau bimbingan',
                     'siswa' => 'Isi milik sendiri',
                 ],
@@ -65,6 +73,8 @@ class RolePermission extends Model
                 'levels' => [
                     'admin' => 'Tidak tersedia',
                     'koordinator' => 'Pantau',
+                    'pembina_sekolah' => 'Verifikasi bimbingan',
+                    'pembina_industri' => 'Verifikasi bimbingan',
                     'pembina' => 'Verifikasi bimbingan',
                     'siswa' => 'Isi milik sendiri',
                 ],
@@ -75,6 +85,8 @@ class RolePermission extends Model
                 'levels' => [
                     'admin' => 'Tidak tersedia',
                     'koordinator' => 'Pantau',
+                    'pembina_sekolah' => 'Kelola bimbingan',
+                    'pembina_industri' => 'Kelola bimbingan',
                     'pembina' => 'Kelola bimbingan',
                     'siswa' => 'Baca hasil terbit',
                 ],
@@ -85,6 +97,8 @@ class RolePermission extends Model
                 'levels' => [
                     'admin' => 'Kelola / baca audit',
                     'koordinator' => 'Tidak tersedia',
+                    'pembina_sekolah' => 'Tidak tersedia',
+                    'pembina_industri' => 'Tidak tersedia',
                     'pembina' => 'Tidak tersedia',
                     'siswa' => 'Tidak tersedia',
                 ],
@@ -94,13 +108,9 @@ class RolePermission extends Model
 
     public static function ensureDefaults(): void
     {
-        if (self::count() > 0) {
-            return;
-        }
-
         foreach (self::defaultMatrix() as $module) {
             foreach ($module['levels'] as $role => $accessLevel) {
-                self::updateOrCreate(
+                self::firstOrCreate(
                     ['role' => $role, 'module_key' => $module['module_key']],
                     [
                         'module_name' => $module['module_name'],

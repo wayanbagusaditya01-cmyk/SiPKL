@@ -13,11 +13,11 @@ class EnsureUserRole
      *
      * @param  Closure(Request): (Response)  $next
      */
-    public function handle(Request $request, Closure $next, string $role): Response
+    public function handle(Request $request, Closure $next, string ...$roles): Response
     {
         $user = $request->user();
 
-        abort_unless($user && $user->status && $user->role === $role, 403);
+        abort_unless($user && $user->status && in_array($user->role, $roles, true), 403);
 
         return $next($request);
     }

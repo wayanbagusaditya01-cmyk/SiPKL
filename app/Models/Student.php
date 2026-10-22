@@ -36,8 +36,8 @@ class Student extends Model
         return $this->hasMany(JournalEntry::class);
     }
 
-    public function grade(): HasOne
+    public function grades(): HasMany
     {
-        return $this->hasOne(PklGrade::class);
+        return $this->hasMany(PklGrade::class);
     }
 }

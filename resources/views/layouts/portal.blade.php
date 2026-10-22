@@ -12,8 +12,19 @@
     @php
         $isAdminPortal = request()->routeIs('admin.*');
         $isStudentPortal = request()->routeIs('student.*');
-        $portalRole = $isAdminPortal ? 'Admin' : ($isStudentPortal ? 'Siswa' : 'Koordinator PKL');
-        $portalNavigation = $isAdminPortal ? [
+        $isMentorPortal = request()->routeIs('mentor.*');
+        $portalMentor = $isMentorPortal ? auth()->user()->mentor : null;
+        $portalRole = $isAdminPortal ? 'Admin' : ($isStudentPortal ? 'Siswa' : ($isMentorPortal ? ($portalMentor?->typeLabel() ?? (auth()->user()->role === 'pembina_industri' ? 'Pembina Industri' : 'Pembina Sekolah')) : 'Koordinator PKL'));
+        $portalHome = $isAdminPortal ? route('admin.dashboard') : ($isStudentPortal ? route('student.portal.dashboard') : ($isMentorPortal ? route('mentor.dashboard') : route('coordinator.dashboard')));
+        $portalNavigation = $isMentorPortal ? [
+            ['label' => 'Ringkasan', 'url' => route('mentor.dashboard'), 'icon' => 'dashboard', 'active' => request()->routeIs('mentor.dashboard')],
+            ['label' => $portalMentor?->isIndustry() ? 'Siswa Magang' : 'Siswa Bimbingan', 'url' => route('mentor.students.index'), 'icon' => 'users', 'active' => request()->routeIs('mentor.students.*')],
+            ['label' => 'Penempatan', 'url' => route('mentor.placements.index'), 'icon' => 'place', 'active' => request()->routeIs('mentor.placements.*')],
+            ['label' => 'Absensi', 'url' => route('mentor.attendance.index'), 'icon' => 'calendar', 'active' => request()->routeIs('mentor.attendance.*')],
+            ['label' => 'Jurnal', 'url' => route('mentor.journals.index'), 'icon' => 'book', 'active' => request()->routeIs('mentor.journals.*')],
+            ['label' => 'Penilaian', 'url' => route('mentor.grades.index'), 'icon' => 'grade', 'active' => request()->routeIs('mentor.grades.*')],
+            ['label' => 'Profil Saya', 'url' => route('mentor.profile.edit'), 'icon' => 'user', 'active' => request()->routeIs('mentor.profile.*')],
+        ] : ($isAdminPortal ? [
             ['label' => 'Ringkasan', 'url' => route('admin.dashboard'), 'icon' => 'dashboard', 'active' => request()->routeIs('admin.dashboard')],
             ['label' => 'Akun Pengguna', 'url' => route('admin.accounts.index'), 'icon' => 'users', 'active' => request()->routeIs('admin.accounts.*')],
             ['label' => 'Hak Akses', 'url' => route('admin.permissions.index'), 'icon' => 'lock', 'active' => request()->routeIs('admin.permissions.*')],
@@ -38,7 +49,7 @@
             ['label' => 'Tempat PKL', 'url' => route('coordinator.tempat.index'), 'icon' => 'place', 'active' => request()->routeIs('coordinator.tempat.*')],
             ['label' => 'Periode PKL', 'url' => route('coordinator.periode.index'), 'icon' => 'calendar', 'active' => request()->routeIs('coordinator.periode.*')],
             ['label' => 'Penempatan', 'url' => route('coordinator.penempatan.index'), 'icon' => 'place', 'active' => request()->routeIs('coordinator.penempatan.*')],
-        ]);
+        ]));
         $person = auth()->user()->name;
         $initials = collect(explode(' ', trim($person)))->filter()->take(2)->map(fn ($part) => mb_strtoupper(mb_substr($part, 0, 1)))->implode('');
     @endphp
@@ -46,7 +57,7 @@
     <div class="app-shell">
         <aside class="sidebar" id="sidebar" aria-label="Navigasi {{ $portalRole }}">
             <div class="sidebar-head">
-                <a class="brand" href="{{ $isAdminPortal ? route('preview.page', ['role' => 'admin', 'page' => 'dashboard']) : ($isStudentPortal ? route('student.portal.dashboard') : route('coordinator.dashboard')) }}"><x-icon name="book"/>SIPKL</a>
+                <a class="brand" href="{{ $portalHome }}"><x-icon name="book"/>SIPKL</a>
                 <button type="button" class="icon-button sidebar-close" data-close-sidebar aria-label="Tutup navigasi"><x-icon name="close"/></button>
             </div>
             <p class="brand-description">Sistem Informasi<br>Praktik Kerja Lapangan</p>

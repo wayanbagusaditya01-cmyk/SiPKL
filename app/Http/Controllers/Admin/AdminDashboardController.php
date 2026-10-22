@@ -36,7 +36,7 @@ class AdminDashboardController extends Controller
             ->take(5)
             ->get();
 
-        $unlinkedMentors = User::where('role', 'pembina')
+        $unlinkedMentors = User::whereIn('role', ['pembina', 'pembina_sekolah', 'pembina_industri'])
             ->doesntHave('mentor')
             ->take(5)
             ->get();

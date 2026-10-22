@@ -23,7 +23,8 @@ class SystemReference extends Model
         return [
             ['category' => 'Peran akun', 'code' => 'admin', 'name' => 'Admin', 'manager_role' => 'Admin', 'description' => 'Pengelola sistem, akun, hak akses, dan log', 'is_system' => true],
             ['category' => 'Peran akun', 'code' => 'koordinator', 'name' => 'Koordinator PKL', 'manager_role' => 'Admin', 'description' => 'Pengelola operasional, siswa, tempat, dan penempatan PKL', 'is_system' => true],
-            ['category' => 'Peran akun', 'code' => 'pembina', 'name' => 'Pembina PKL', 'manager_role' => 'Admin', 'description' => 'Pembina sekolah dan industri untuk monitoring dan nilai', 'is_system' => true],
+            ['category' => 'Peran akun', 'code' => 'pembina_sekolah', 'name' => 'Pembina Sekolah', 'manager_role' => 'Admin', 'description' => 'Guru pembimbing dari sekolah untuk monitoring, verifikasi jurnal, dan nilai', 'is_system' => true],
+            ['category' => 'Peran akun', 'code' => 'pembina_industri', 'name' => 'Pembina Industri', 'manager_role' => 'Admin', 'description' => 'Pembimbing dari tempat PKL untuk monitoring, verifikasi jurnal, dan nilai', 'is_system' => true],
             ['category' => 'Peran akun', 'code' => 'siswa', 'name' => 'Siswa', 'manager_role' => 'Admin', 'description' => 'Peserta program PKL yang mengisi absensi dan jurnal', 'is_system' => true],
 
             ['category' => 'Status akun', 'code' => 'aktif', 'name' => 'Aktif', 'manager_role' => 'Admin', 'description' => 'Akun dapat masuk dan menggunakan sistem', 'is_system' => true],

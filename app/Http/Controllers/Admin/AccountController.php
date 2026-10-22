@@ -19,7 +19,7 @@ class AccountController extends Controller
     {
         $filters = $request->validate([
             'q' => ['nullable', 'string', 'max:100'],
-            'role' => ['nullable', Rule::in(array_keys(config('preview.roles')))],
+            'role' => ['nullable', Rule::in([...array_keys(config('preview.roles')), 'pembina'])],
             'status' => ['nullable', Rule::in(['active', 'inactive'])],
         ]);
 
@@ -72,7 +72,7 @@ class AccountController extends Controller
             'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')],
             'phone' => ['nullable', 'string', 'max:32'],
             'password' => ['required', 'string', 'min:12', 'confirmed'],
-            'role' => ['required', Rule::in(array_keys(config('preview.roles')))],
+            'role' => ['required', Rule::in([...array_keys(config('preview.roles')), 'pembina'])],
             'status' => ['required', 'boolean'],
         ]);
 
@@ -114,7 +114,7 @@ class AccountController extends Controller
             'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($account->id)],
             'phone' => ['nullable', 'string', 'max:32'],
             'password' => ['nullable', 'string', 'min:12', 'confirmed'],
-            'role' => ['required', Rule::in(array_keys(config('preview.roles')))],
+            'role' => ['required', Rule::in([...array_keys(config('preview.roles')), 'pembina'])],
             'status' => ['required', 'boolean'],
         ]);
 
@@ -122,6 +122,17 @@ class AccountController extends Controller
             throw ValidationException::withMessages([
                 'status' => 'Akun admin yang sedang digunakan tidak dapat dinonaktifkan atau diubah perannya.',
             ]);
+        }
+
+        if ($account->mentor && $account->role !== $values['role']) {
+            $changedAccount = (new User)->forceFill(['role' => $values['role']]);
+            $expectedType = $changedAccount->expectedMentorType();
+
+            if (! $changedAccount->isMentor() || ($expectedType !== null && $expectedType !== $account->mentor->type)) {
+                throw ValidationException::withMessages([
+                    'role' => "Akun ini sudah terhubung ke profil Pembina {$account->mentor->type}. Ubah profil pembinanya terlebih dahulu melalui Koordinator PKL.",
+                ]);
+            }
         }
 
         $password = $values['password'] ?? null;

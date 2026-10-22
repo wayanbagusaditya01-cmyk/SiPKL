@@ -30,6 +30,10 @@ class PreviewTest extends TestCase
     {
         $this->get('/')->assertOk()->assertSee('Masuk ke SIPKL');
         foreach (config('preview.roles') as $role => $identity) {
+            if (in_array($role, User::MENTOR_ROLES, true)) {
+                continue;
+            }
+
             $this->signInAs($role);
 
             foreach ($identity['menus'] as $page => $label) {
@@ -63,11 +67,6 @@ class PreviewTest extends TestCase
         $this->get('/preview/siswa/akun')->assertNotFound();
         $this->get('/preview/unknown/dashboard')->assertForbidden();
         $this->get('/preview/admin/dashboard')->assertForbidden();
-
-        $this->signInAs('pembina');
-        $this->get('/preview/pembina/siswa?detail=3')->assertNotFound();
-
-        $this->signInAs('siswa');
         $this->get('/preview/siswa/jurnal?journal=2')->assertNotFound();
 
         $this->post('/preview/siswa/nilai', ['action' => 'publish'])->assertForbidden();
@@ -84,20 +83,6 @@ class PreviewTest extends TestCase
         $this->get('/preview/siswa/dashboard')->assertSee('Absensi hari ini sudah diisi.');
     }
 
-    public function test_revisions_need_notes_and_student_can_resubmit(): void
-    {
-        $this->signInAs('pembina');
-        $this->post('/preview/pembina/jurnal', ['action' => 'revise', 'id' => 1, 'note' => ''])->assertSessionHasErrors('note');
-        $this->post('/preview/pembina/jurnal', ['action' => 'revise', 'id' => 1, 'note' => 'Tambahkan hasil uji.'])->assertSessionHasNoErrors();
-
-        $this->signInAs('siswa');
-        $this->get('/preview/siswa/jurnal?journal=1')->assertSee('Tambahkan hasil uji.')->assertSee('Kirim Ulang Jurnal');
-        $this->post('/preview/siswa/jurnal', ['action' => 'send', 'id' => 1, 'date' => '2026-10-08', 'title' => 'Pengujian selesai', 'activity' => 'Hasil uji dan pembelajaran sudah dilengkapi.'])->assertSessionHasNoErrors();
-
-        $this->signInAs('pembina');
-        $this->get('/preview/pembina/jurnal?journal=1')->assertSee('Pengujian selesai')->assertSee('Menunggu');
-    }
-
     public function test_unsafe_documentation_url_and_edits_to_approved_journal_are_rejected(): void
     {
         $this->signInAs('siswa');
@@ -106,26 +91,6 @@ class PreviewTest extends TestCase
         $payload['url'] = '';
         $payload['id'] = 4;
         $this->post('/preview/siswa/jurnal', $payload)->assertForbidden();
-    }
-
-    public function test_grade_draft_is_hidden_and_published_grade_becomes_visible(): void
-    {
-        $this->signInAs('pembina');
-        $payload = ['action' => 'draft', 'student' => 1, 'grade' => '87.25', 'note' => 'Catatan rahasia draf contoh'];
-        $this->post('/preview/pembina/penilaian', $payload)->assertSessionHasNoErrors();
-        $this->signInAs('siswa');
-        $this->get('/preview/siswa/nilai')->assertSee('Nilai belum diterbitkan')->assertDontSee('87.25')->assertDontSee('Catatan rahasia draf contoh');
-        $this->get('/preview/siswa/dashboard')->assertDontSee('87.25');
-
-        $this->signInAs('pembina');
-        $this->post('/preview/pembina/penilaian', array_replace($payload, ['action' => 'publish']))->assertSessionHasNoErrors();
-
-        $this->signInAs('siswa');
-        $this->get('/preview/siswa/nilai')->assertSee('87.25')->assertSee('Catatan rahasia draf contoh');
-
-        $this->signInAs('pembina');
-        $this->post('/preview/pembina/penilaian', array_replace($payload, ['grade' => 101]))->assertSessionHasErrors('grade');
-        $this->post('/preview/pembina/penilaian', array_replace($payload, ['student' => 3]))->assertForbidden();
     }
 
     public function test_placement_requires_matching_mentor_and_never_duplicates_students(): void
@@ -160,11 +125,6 @@ class PreviewTest extends TestCase
 
         $this->signInAs('admin');
         $this->get('/preview/admin/akun?q=tidakada')->assertSee('Tidak ada hasil yang cocok');
-
-        $this->signInAs('pembina');
-        $this->get('/preview/pembina/jurnal?q=tidakada')->assertSee('Tidak ada jurnal yang cocok');
-
-        $this->signInAs('admin');
         $this->withSession(['sipkl_preview' => PreviewData::initial()])->post('/preview/reset')->assertRedirect('/')->assertSessionMissing('sipkl_preview');
     }
 
@@ -175,9 +135,6 @@ class PreviewTest extends TestCase
 
         $this->signInAs('koordinator');
         $this->get('/preview/koordinator/siswa?class=XII%20TKJ%202')->assertSee('Bima Saputra')->assertDontSee('Aditya Pratama');
-
-        $this->signInAs('pembina');
-        $this->get('/preview/pembina/absensi?student=Kirana%20Putri')->assertViewHas('table', fn ($table) => count($table['rows']) === 1 && $table['rows'][0]['cells'][1] === 'Kirana Putri');
     }
 
     public function test_coordinator_dashboard_and_report_use_database_records_not_preview_names(): void
@@ -217,10 +174,6 @@ class PreviewTest extends TestCase
         $this->signInAs('siswa');
         $this->post('/preview/siswa/jurnal', ['action' => 'draft', 'title' => 'Draf pribadi contoh', 'activity' => 'Belum dikirim', 'date' => '2026-10-08'])->assertSessionHasNoErrors();
         $this->get('/preview/siswa/jurnal')->assertSee('Draf pribadi contoh');
-
-        $this->signInAs('pembina');
-        $this->get('/preview/pembina/jurnal')->assertDontSee('Draf pribadi contoh');
-        $this->get('/preview/pembina/jurnal?journal=5')->assertNotFound();
     }
 
     public function test_student_preview_displays_logged_in_student_name_instead_of_default_preview_name(): void
@@ -274,20 +227,13 @@ class PreviewTest extends TestCase
         $this->assertTrue($studentUser->fresh()->student->placement()->exists());
     }
 
-    public function test_industry_mentor_gets_industry_menus_and_own_scope(): void
+    public function test_legacy_industry_mentor_preview_pages_redirect_to_the_database_portal(): void
     {
         $user = User::factory()->create(['role' => 'pembina']);
         Mentor::factory()->create(['user_id' => $user->id, 'type' => 'Industri', 'nip' => null, 'position' => 'Supervisor']);
         $this->actingAs($user);
 
-        $this->get('/preview/pembina/dashboard')->assertOk()->assertSee('Pembina Industri')->assertSee('Ringkasan Pembimbingan')->assertSee('Siswa magang');
-        foreach (config('preview.roles.pembina.variants.Industri.menus') as $page => $label) {
-            $this->get("/preview/pembina/$page")->assertOk()->assertSee($label);
-        }
-        $this->get('/preview/pembina/siswa')->assertOk()->assertSee('Pembina Sekolah')->assertSee('Aditya Pratama');
-        $this->get('/preview/pembina/siswa?detail=3')->assertNotFound();
-        $this->get('/preview/pembina/profil')->assertOk()->assertSee('Industri');
-        $this->post('/preview/pembina/jurnal', ['action' => 'approve', 'id' => 1, 'note' => ''])->assertSessionHasNoErrors();
-        $this->post('/preview/pembina/penilaian', ['action' => 'draft', 'student' => 3, 'grade' => 80])->assertForbidden();
+        $this->get('/preview/pembina/siswa')->assertRedirect(route('mentor.students.index'));
+        $this->get(route('mentor.students.index'))->assertOk()->assertSee('Siswa Magang')->assertSee('Pembina Industri');
     }
 }

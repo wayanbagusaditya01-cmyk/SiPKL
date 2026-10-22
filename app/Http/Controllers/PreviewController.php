@@ -48,17 +48,19 @@ class PreviewController extends Controller
     {
         $this->enabled();
         $roles = config('preview.roles');
-        $variant = $role === 'pembina' && auth()->check() ? PreviewMentor::type(auth()->user()) : null;
-        if ($variant && isset($roles['pembina']['variants'][$variant])) {
-            $roles['pembina'] = array_replace($roles['pembina'], $roles['pembina']['variants'][$variant]);
+
+        if ($role === 'pembina') {
+            $variant = auth()->check() ? PreviewMentor::type(auth()->user()) : PreviewMentor::SCHOOL;
+            $roleKey = $variant === PreviewMentor::INDUSTRY ? 'pembina_industri' : 'pembina_sekolah';
+            $roles['pembina'] = $roles[$roleKey];
         }
-        unset($roles['pembina']['variants']);
+
         abort_unless(isset($roles[$role]['menus'][$page]), 404);
 
-        if ($role === 'siswa' && auth()->check()) {
+        if (in_array($role, ['pembina_sekolah', 'pembina_industri', 'pembina', 'siswa']) && auth()->check()) {
             $user = auth()->user();
-            $roles['siswa']['person'] = $user->name;
-            $roles['siswa']['initials'] = collect(explode(' ', trim($user->name)))
+            $roles[$role]['person'] = $user->name;
+            $roles[$role]['initials'] = collect(explode(' ', trim($user->name)))
                 ->filter()
                 ->take(2)
                 ->map(fn ($part) => mb_strtoupper(mb_substr($part, 0, 1)))
@@ -77,6 +79,10 @@ class PreviewController extends Controller
 
     public function show(Request $request, string $role, string $page = 'dashboard')
     {
+        if ($request->user()->isMentor()) {
+            return redirect()->route($this->mentorRoute($page));
+        }
+
         [$roles, $identity] = $this->context($role, $page);
         if ($role === 'siswa' && $request->user()->student()->exists()) {
             return redirect()->route($this->studentRoute($page));
@@ -137,8 +143,9 @@ class PreviewController extends Controller
             $record = collect($data[$table['key']])->firstWhere('id', $id);
         }
         $placement = $request->query('state') === 'unplaced' && $role === 'siswa' ? null : collect($data['placements'])->firstWhere('student', 1);
+        $isMentor = in_array($role, ['pembina', 'pembina_sekolah', 'pembina_industri']);
         $journals = collect($data['journals'])->filter(fn ($j) => $role === 'siswa' ? $j['student'] === 1 : collect($data['placements'])->contains(fn ($p) => $p['student'] === $j['student'] && PreviewMentor::guides($p, $mentorScope)))->sortByDesc('date');
-        if ($role === 'pembina') {
+        if ($isMentor) {
             $journals = $journals->where('status', '!=', 'Draf');
         }
         if ($filter !== '') {
@@ -147,7 +154,7 @@ class PreviewController extends Controller
         if ($q !== '') {
             $journals = $journals->filter(fn ($j) => mb_stripos($j['title'].' '.$j['activity'].' '.(collect($data['students'])->firstWhere('id', $j['student'])['name'] ?? ''), $q) !== false);
         }
-        $selected = $request->filled('journal') ? $journals->firstWhere('id', (int) $request->query('journal')) : ($role === 'pembina' ? $journals->first() : null);
+        $selected = $request->filled('journal') ? $journals->firstWhere('id', (int) $request->query('journal')) : ($isMentor ? $journals->first() : null);
         abort_if($request->filled('journal') && ! $selected, 404);
         $form = ($role === 'admin' && $page === 'akun') || ($role === 'koordinator' && isset($forms[$page])) ? $forms[$page] : null;
         if ($request->filled('form')) {
@@ -162,7 +169,29 @@ class PreviewController extends Controller
 
     private function profileKey(string $role, array $mentorScope): string
     {
-        return $role === 'pembina' && $mentorScope['type'] === PreviewMentor::INDUSTRY ? 'pembina-industri' : $role;
+        if ($role === 'pembina_industri' || ($role === 'pembina' && $mentorScope['type'] === PreviewMentor::INDUSTRY)) {
+            return 'pembina-industri';
+        }
+
+        if ($role === 'pembina_sekolah') {
+            return 'pembina';
+        }
+
+        return $role;
+    }
+
+    private function mentorRoute(string $page): string
+    {
+        return match ($page) {
+            'dashboard' => 'mentor.dashboard',
+            'siswa' => 'mentor.students.index',
+            'penempatan' => 'mentor.placements.index',
+            'absensi' => 'mentor.attendance.index',
+            'jurnal' => 'mentor.journals.index',
+            'penilaian' => 'mentor.grades.index',
+            'profil' => 'mentor.profile.edit',
+            default => abort(404),
+        };
     }
 
     private function studentRoute(string $page): string
@@ -196,6 +225,8 @@ class PreviewController extends Controller
 
     public function action(Request $request, string $role, string $page)
     {
+        abort_if($request->user()->isMentor(), 403, 'Gunakan portal Pembina untuk mengubah data.');
+
         [, $identity] = $this->context($role, $page);
         if ($role === 'siswa' && $request->user()->student()->exists()) {
             abort(403);
@@ -231,7 +262,7 @@ class PreviewController extends Controller
                     $data['journals'][$index] = $journal;
                 }
             }
-        } elseif ($role === 'pembina' && $page === 'jurnal') {
+        } elseif (in_array($role, ['pembina', 'pembina_sekolah', 'pembina_industri']) && $page === 'jurnal') {
             abort_unless(in_array($action, ['approve', 'revise']), 403);
             $values = $request->validate(['id' => 'required|integer', 'note' => ($action === 'revise' ? 'required' : 'nullable').'|string|max:3000']);
             $index = array_search($values['id'], array_column($data['journals'], 'id'));
@@ -240,7 +271,7 @@ class PreviewController extends Controller
             abort_unless(collect($data['placements'])->contains(fn ($p) => $p['student'] === $j['student'] && PreviewMentor::guides($p, $mentorScope)) && $j['status'] === 'Menunggu', 403);
             $data['journals'][$index]['status'] = $action === 'approve' ? 'Disetujui' : 'Perlu Revisi';
             $data['journals'][$index]['note'] = $values['note'] ?? '';
-        } elseif ($role === 'pembina' && $page === 'penilaian') {
+        } elseif (in_array($role, ['pembina', 'pembina_sekolah', 'pembina_industri']) && $page === 'penilaian') {
             abort_unless(in_array($action, ['draft', 'publish']), 403);
             $values = $request->validate(['student' => 'required|integer', 'grade' => 'required|numeric|min:0|max:100', 'note' => 'nullable|string|max:3000']);
             abort_unless(collect($data['placements'])->contains(fn ($p) => $p['student'] === (int) $values['student'] && PreviewMentor::guides($p, $mentorScope)), 403);
@@ -346,7 +377,7 @@ class PreviewController extends Controller
                     $data[$form['key']][$index] = array_replace($data[$form['key']][$index], $values);
                 }
             }
-        } elseif ($page === 'profil' && in_array($role, ['admin', 'pembina'])) {
+        } elseif ($page === 'profil' && in_array($role, ['admin', 'pembina', 'pembina_sekolah', 'pembina_industri'])) {
             abort_unless($action === 'profile', 403);
             $data['profiles'][$this->profileKey($role, $mentorScope)] = $request->validate(['name' => 'required|string|max:100', 'email' => 'required|email|max:120', 'phone' => 'nullable|string|max:20']);
         } else {

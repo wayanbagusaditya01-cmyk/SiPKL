@@ -31,6 +31,10 @@ class LoginController extends Controller
                 return redirect()->route('coordinator.dashboard');
             }
 
+            if ($user instanceof User && $user->isMentor()) {
+                return redirect()->route('mentor.dashboard');
+            }
+
             return redirect()->route('preview.page', ['role' => $user->role, 'page' => 'dashboard']);
         }
 
@@ -55,7 +59,7 @@ class LoginController extends Controller
         $request->session()->regenerate();
         $user = Auth::user();
 
-        if (! array_key_exists($user->role, config('preview.roles'))) {
+        if (! array_key_exists($user->role, config('preview.roles')) && ! $user->isMentor()) {
             Auth::logout();
             $request->session()->invalidate();
             $request->session()->regenerateToken();
@@ -97,6 +101,10 @@ class LoginController extends Controller
 
         if ($user->role === 'koordinator') {
             return redirect()->route('coordinator.dashboard');
+        }
+
+        if ($user->isMentor()) {
+            return redirect()->route('mentor.dashboard');
         }
 
         return redirect()->route('preview.page', ['role' => $user->role, 'page' => 'dashboard']);

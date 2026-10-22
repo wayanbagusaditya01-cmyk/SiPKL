@@ -41,7 +41,7 @@ class LoginTest extends TestCase
         $teacher = User::factory()->create(['email' => 'guru@sekolah.test', 'password' => 'rahasia', 'role' => 'pembina']);
 
         $this->post(route('login.store'), ['email' => $teacher->email, 'password' => 'rahasia'])
-            ->assertRedirect(route('preview.page', ['role' => 'pembina', 'page' => 'dashboard']));
+            ->assertRedirect(route('mentor.dashboard'));
 
         $this->assertAuthenticatedAs($teacher);
     }

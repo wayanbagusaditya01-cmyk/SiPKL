@@ -20,7 +20,7 @@ class StudentPortalController extends Controller
         $presentCount = $student->attendances()->where('status', 'Hadir')->count();
         $journalCount = $student->journals()->count();
         $waitingJournalsCount = $student->journals()->where('status', 'Menunggu')->count();
-        $publishedGrade = $student->grade()->where('status', 'Terbit')->first();
+        $publishedGrade = $student->grades()->where('status', 'Terbit')->exists();
 
         return view('students.dashboard', compact('student', 'attendances', 'recentJournals', 'attendanceCount', 'presentCount', 'journalCount', 'waitingJournalsCount', 'publishedGrade'));
     }
@@ -52,9 +52,14 @@ class StudentPortalController extends Controller
     public function grade(Request $request): View
     {
         $student = $this->studentFor($request);
-        $grade = $student->grade()->where('status', 'Terbit')->with('mentor.user')->first();
+        $grades = $student->grades()
+            ->where('status', 'Terbit')
+            ->with('mentor.user')
+            ->orderBy('published_at')
+            ->get();
+        $averageScore = $grades->isNotEmpty() ? $grades->avg(fn ($grade) => (float) $grade->score) : null;
 
-        return view('students.grade', compact('student', 'grade'));
+        return view('students.grade', compact('student', 'grades', 'averageScore'));
     }
 
     private function studentFor(Request $request): Student

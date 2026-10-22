@@ -76,7 +76,7 @@
                 @else
                     <x-empty title="Profil Siswa Belum Terhubung" description="Akun ini belum memiliki catatan di data siswa."/>
                 @endif
-            @elseif($account->role === 'pembina')
+            @elseif(in_array($account->role, ['pembina', 'pembina_sekolah', 'pembina_industri']))
                 @if($account->mentor)
                     <dl>
                         <dt>Tipe Pembina</dt>

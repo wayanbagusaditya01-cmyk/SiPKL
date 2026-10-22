@@ -14,6 +14,12 @@ use App\Http\Controllers\Coordinator\PeriodController;
 use App\Http\Controllers\Coordinator\PlaceController;
 use App\Http\Controllers\Coordinator\PlacementController;
 use App\Http\Controllers\Coordinator\StudentController;
+use App\Http\Controllers\Mentor\MentorAttendanceController;
+use App\Http\Controllers\Mentor\MentorDashboardController;
+use App\Http\Controllers\Mentor\MentorGradeController;
+use App\Http\Controllers\Mentor\MentorJournalController;
+use App\Http\Controllers\Mentor\MentorProfileController;
+use App\Http\Controllers\Mentor\MentorStudentController;
 use App\Http\Controllers\PreviewController;
 use App\Http\Controllers\Student\AttendanceController;
 use App\Http\Controllers\Student\JournalController;
@@ -21,6 +27,7 @@ use App\Http\Controllers\Student\NotificationController;
 use App\Http\Controllers\Student\ProfileController;
 use App\Http\Controllers\Student\StudentPortalController;
 use App\Http\Middleware\EnsurePreviewRole;
+use App\Models\User;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [LoginController::class, 'create'])->name('login');
@@ -92,14 +99,18 @@ Route::middleware(['auth', 'role:siswa'])->prefix('siswa')->name('student.')->gr
     Route::post('/notifikasi/read-all', [NotificationController::class, 'readAll'])->name('notifications.readAll');
 });
 
-// SEMENTARA: lihat tampilan Pembina Industri tanpa database
-if (app()->environment('local')) {
-    Route::get('/lihat-industri/{page?}', function (\Illuminate\Http\Request $request, string $page = 'dashboard') {
-        $user = new \App\Models\User(['name' => 'Dimas Prakoso', 'email' => 'dimas@example.test', 'role' => 'pembina', 'status' => true]);
-        $user->setRelation('mentor', new \App\Models\Mentor(['type' => 'Industri']));
-        \Illuminate\Support\Facades\Auth::setUser($user);
-        $request->setUserResolver(fn () => $user);
-
-        return app(\App\Http\Controllers\PreviewController::class)->show($request, 'pembina', $page);
-    });
-}
+Route::middleware(['auth', 'role:'.implode(',', User::MENTOR_ROLES)])->prefix('pembina')->name('mentor.')->group(function (): void {
+    Route::get('/', fn () => redirect()->route('mentor.dashboard'));
+    Route::get('/dashboard', [MentorDashboardController::class, 'index'])->name('dashboard');
+    Route::get('/siswa', [MentorStudentController::class, 'index'])->name('students.index');
+    Route::get('/penempatan', [MentorStudentController::class, 'placements'])->name('placements.index');
+    Route::get('/absensi', [MentorAttendanceController::class, 'index'])->name('attendance.index');
+    Route::get('/jurnal', [MentorJournalController::class, 'index'])->name('journals.index');
+    Route::post('/jurnal/{journal}/setujui', [MentorJournalController::class, 'approve'])->name('journals.approve');
+    Route::post('/jurnal/{journal}/revisi', [MentorJournalController::class, 'revise'])->name('journals.revise');
+    Route::get('/penilaian', [MentorGradeController::class, 'index'])->name('grades.index');
+    Route::post('/penilaian', [MentorGradeController::class, 'store'])->middleware('throttle:30,1')->name('grades.store');
+    Route::get('/profil', [MentorProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('/profil', [MentorProfileController::class, 'update'])->name('profile.update');
+    Route::put('/profil/password', [MentorProfileController::class, 'updatePassword'])->name('profile.password');
+});

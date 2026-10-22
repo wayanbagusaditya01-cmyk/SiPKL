@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class MentorController extends Controller
@@ -85,7 +86,7 @@ class MentorController extends Controller
             'user_id' => [
                 'required',
                 'integer',
-                Rule::exists('users', 'id')->where(fn ($query) => $query->where('role', 'pembina')->where('status', true)),
+                Rule::exists('users', 'id')->where(fn ($query) => $query->whereIn('role', User::MENTOR_ROLES)->where('status', true)),
                 $accountRule,
             ],
             'type' => ['required', Rule::in(['Sekolah', 'Industri'])],
@@ -99,6 +100,14 @@ class MentorController extends Controller
             ],
         ]);
 
+        $expectedType = User::find($values['user_id'])?->expectedMentorType();
+
+        if ($expectedType !== null && $expectedType !== $values['type']) {
+            throw ValidationException::withMessages([
+                'type' => "Akun ini berperan Pembina {$expectedType}, sehingga tipe pembina harus {$expectedType}.",
+            ]);
+        }
+
         $values['place_id'] = $isIndustry ? $values['place_id'] : null;
         $values['nip'] = $isIndustry ? null : ($values['nip'] ?? null);
         $values['position'] = $isIndustry ? $values['position'] : null;
@@ -110,7 +119,7 @@ class MentorController extends Controller
     private function availableAccounts(?Mentor $mentor = null): Collection
     {
         return User::query()
-            ->where('role', 'pembina')
+            ->whereIn('role', User::MENTOR_ROLES)
             ->where('status', true)
             ->where(function (Builder $query) use ($mentor): void {
                 $query->whereDoesntHave('mentor');
@@ -120,6 +129,6 @@ class MentorController extends Controller
                 }
             })
             ->orderBy('name')
-            ->get(['id', 'name', 'email']);
+            ->get(['id', 'name', 'email', 'role']);
     }
 }

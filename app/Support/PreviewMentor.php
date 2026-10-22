@@ -19,6 +19,14 @@ class PreviewMentor
 
     public static function type(?User $user): string
     {
+        if ($user?->role === 'pembina_industri') {
+            return self::INDUSTRY;
+        }
+
+        if ($user?->role === 'pembina_sekolah') {
+            return self::SCHOOL;
+        }
+
         return $user?->mentor?->type === self::INDUSTRY ? self::INDUSTRY : self::SCHOOL;
     }
 

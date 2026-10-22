@@ -65,7 +65,7 @@
                     @foreach($users as $user)
                         @php
                             $isSelf = auth()->id() === $user->id;
-                            $hasProfile = ($user->role === 'siswa' && $user->student) || ($user->role === 'pembina' && $user->mentor) || in_array($user->role, ['admin', 'koordinator']);
+                            $hasProfile = ($user->role === 'siswa' && $user->student) || (in_array($user->role, ['pembina', 'pembina_sekolah', 'pembina_industri']) && $user->mentor) || in_array($user->role, ['admin', 'koordinator']);
                         @endphp
                         <tr>
                             <td data-label="Nama">
@@ -80,7 +80,7 @@
                                 @if($user->role === 'siswa')
                                     <x-badge :status="$user->student ? 'Aktif' : 'Menunggu'"/>
                                     <small style="display: block; font-size: 11px; color: var(--muted, #64748b);">{{ $user->student ? $user->student->nis : 'Belum ada profil' }}</small>
-                                @elseif($user->role === 'pembina')
+                                @elseif(in_array($user->role, ['pembina', 'pembina_sekolah', 'pembina_industri']))
                                     <x-badge :status="$user->mentor ? 'Aktif' : 'Menunggu'"/>
                                     <small style="display: block; font-size: 11px; color: var(--muted, #64748b);">{{ $user->mentor ? $user->mentor->type : 'Belum ada profil' }}</small>
                                 @else

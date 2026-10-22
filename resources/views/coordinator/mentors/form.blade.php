@@ -10,7 +10,7 @@
     @csrf
     @if($editing) @method('PUT') @endif
     <div class="form-grid">
-        <x-field name="user_id" label="Akun Pembina" type="select" :options="$accounts->mapWithKeys(fn ($account) => [$account->id => $account->name.' · '.$account->email])->all()" :value="$mentor?->user_id ?? ''" required hint="Hanya akun ber-role Pembina yang aktif dan belum terhubung."/>
+        <x-field name="user_id" label="Akun Pembina" type="select" :options="$accounts->mapWithKeys(fn ($account) => [$account->id => $account->name.' · '.$account->email.($account->role === 'pembina_industri' ? ' (Pembina Industri)' : ($account->role === 'pembina_sekolah' ? ' (Pembina Sekolah)' : ' (Pembina)'))])->all()" :value="$mentor?->user_id ?? ''" required hint="Hanya akun ber-role Pembina Sekolah atau Industri yang aktif dan belum terhubung."/>
         <x-field name="type" label="Tipe Pembina" type="select" :options="['Sekolah' => 'Pembina Sekolah', 'Industri' => 'Pembina Industri']" :value="$mentor?->type ?? ''" required/>
         <x-field name="nip" label="NIP" :value="$mentor?->nip ?? ''" maxlength="32" hint="Diisi untuk Pembina sekolah."/>
         <x-field name="position" label="Jabatan" :value="$mentor?->position ?? ''" maxlength="120" hint="Wajib untuk Pembina industri."/>
