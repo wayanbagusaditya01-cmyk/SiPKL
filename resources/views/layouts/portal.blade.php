@@ -7,6 +7,7 @@
     <title>@yield('title', 'SIPKL') | SIPKL</title>
     <link rel="icon" type="image/svg+xml" href="{{ asset('assets/book-open.svg') }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @stack('scripts')
 </head>
 <body>
     @php
@@ -23,6 +24,7 @@
             ['label' => 'Absensi', 'url' => route('mentor.attendance.index'), 'icon' => 'calendar', 'active' => request()->routeIs('mentor.attendance.*')],
             ['label' => 'Jurnal', 'url' => route('mentor.journals.index'), 'icon' => 'book', 'active' => request()->routeIs('mentor.journals.*')],
             ['label' => 'Penilaian', 'url' => route('mentor.grades.index'), 'icon' => 'grade', 'active' => request()->routeIs('mentor.grades.*')],
+            ...($portalMentor?->isIndustry() && $portalMentor->place_id ? [['label' => 'Jadwal & Lokasi', 'url' => route('mentor.schedule.edit'), 'icon' => 'calendar', 'active' => request()->routeIs('mentor.schedule.*')]] : []),
             ['label' => 'Profil Saya', 'url' => route('mentor.profile.edit'), 'icon' => 'user', 'active' => request()->routeIs('mentor.profile.*')],
         ] : ($isAdminPortal ? [
             ['label' => 'Ringkasan', 'url' => route('admin.dashboard'), 'icon' => 'dashboard', 'active' => request()->routeIs('admin.dashboard')],

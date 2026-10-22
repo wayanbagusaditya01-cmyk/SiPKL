@@ -126,7 +126,7 @@ class JournalController extends Controller
             'title' => ['required', 'string', 'max:120'],
             'activity' => ['required', 'string', 'max:10000'],
             'documentation_url' => ['nullable', 'url:http,https', 'max:255'],
-            'documentation_file' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,pdf', 'max:2048'],
+            'documentation_file' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             'action' => ['required', Rule::in(['draft', 'send'])],
         ]);
     }

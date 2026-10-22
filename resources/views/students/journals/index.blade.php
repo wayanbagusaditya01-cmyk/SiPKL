@@ -19,12 +19,12 @@
                 <x-field name="title" label="Ringkasan kegiatan" :value="$journal?->title ?? ''" required maxlength="120"/>
                 <x-field name="activity" label="Uraian kegiatan dan pembelajaran" type="textarea" :value="$journal?->activity ?? ''" required maxlength="10000" hint="Jelaskan pekerjaan, hasil, dan pembelajaran yang kamu dapatkan."/>
                 <x-field name="documentation_url" label="URL dokumentasi (opsional)" type="url" :value="$journal?->documentation_url ?? ''" maxlength="255"/>
-                <x-field name="documentation_file" label="File dokumentasi (opsional)" type="file" accept=".jpg,.jpeg,.png,.webp,.pdf" hint="Format: JPG, PNG, WEBP, atau PDF. Maksimal 2MB."/>
+                <x-field name="documentation_file" label="Foto dokumentasi (opsional)" type="file" accept="image/jpeg,image/png,image/webp" hint="Format foto: JPG, PNG, atau WEBP. Maksimal 2MB."/>
                 @if($editing && $journal->documentation_path)
                     <div style="grid-column: 1 / -1; margin-top: -10px; margin-bottom: 12px; font-size: 13px;">
-                        <span class="muted">File terunggah saat ini:</span>
+                        <span class="muted">Foto terunggah saat ini:</span>
                         <a href="{{ asset('storage/' . $journal->documentation_path) }}" target="_blank" rel="noopener noreferrer" style="display: inline-flex; align-items: center; gap: 4px; color: var(--primary); font-weight: 500; margin-left: 6px;">
-                            <x-icon name="file"/> Lihat file dokumentasi
+                            <x-icon name="file"/> Lihat foto dokumentasi
                         </a>
                     </div>
                 @endif

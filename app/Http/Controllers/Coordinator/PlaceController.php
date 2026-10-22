@@ -70,7 +70,12 @@ class PlaceController extends Controller
             'email' => ['nullable', 'email', 'max:255'],
             'latitude' => ['nullable', 'numeric', 'between:-90,90'],
             'longitude' => ['nullable', 'numeric', 'between:-180,180'],
+            'attendance_radius' => ['nullable', 'integer', 'between:25,2000'],
         ]);
+
+        if (($values['attendance_radius'] ?? null) === null) {
+            unset($values['attendance_radius']);
+        }
 
         $values['name'] = Str::squish($values['name']);
 

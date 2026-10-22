@@ -30,55 +30,50 @@ class StudentRecordsTest extends TestCase
         $this->assertAuthenticatedAs($studentData['user']);
     }
 
-    public function test_student_attendance_is_persisted_and_cannot_duplicate_a_day(): void
+    public function test_student_leave_is_persisted_and_cannot_duplicate_a_day(): void
     {
+        $this->travelTo('2026-10-12 09:00');
         $studentData = $this->createLinkedStudent();
         $this->actingAs($studentData['user']);
 
-        $this->post(route('student.attendance.store'), [
+        $this->post(route('student.attendance.leave'), [
             'attendance_date' => '2026-10-12',
-            'status' => 'Hadir',
-            'time_in' => '08:00',
-            'time_out' => '16:00',
+            'note' => 'Keperluan keluarga.',
         ])->assertRedirect(route('student.attendance.index'));
 
         $this->assertDatabaseHas('attendances', [
             'student_id' => $studentData['student']->id,
-            'status' => 'Hadir',
+            'status' => 'Izin',
         ]);
-        $this->assertSame(
-            1,
-            Attendance::where('student_id', $studentData['student']->id)->whereDate('attendance_date', '2026-10-12')->count(),
-        );
 
         $this->from(route('student.attendance.index'))
-            ->post(route('student.attendance.store'), [
+            ->post(route('student.attendance.leave'), [
                 'attendance_date' => '2026-10-12',
-                'status' => 'Hadir',
-                'time_in' => '08:05',
-                'time_out' => '16:00',
+                'note' => 'Pengajuan kedua.',
             ])->assertRedirect(route('student.attendance.index'))
-            ->assertSessionHasErrors('attendance_date');
+            ->assertSessionHasErrors(['attendance_date' => 'Absensi untuk tanggal ini sudah tersimpan.']);
 
         $this->assertDatabaseCount('attendances', 1);
     }
 
     public function test_student_cannot_save_attendance_without_an_active_placement(): void
     {
+        $this->travelTo('2026-10-12 09:00');
+        PklPeriod::factory()->create();
         $studentAccount = User::factory()->create(['role' => 'siswa']);
         Student::factory()->create(['user_id' => $studentAccount->id]);
 
         $this->actingAs($studentAccount)
             ->from(route('student.attendance.index'))
-            ->post(route('student.attendance.store'), [
-                'attendance_date' => '2026-10-12',
-                'status' => 'Hadir',
-                'time_in' => '08:00',
-                'time_out' => '16:00',
+            ->post(route('student.attendance.check-in'), [
+                'latitude' => -5.147665,
+                'longitude' => 119.432732,
+                'accuracy' => 10,
             ])->assertRedirect(route('student.attendance.index'))
-            ->assertSessionHasErrors('attendance_date');
+            ->assertSessionHasErrors('attendance');
 
         $this->assertDatabaseCount('attendances', 0);
+        $this->assertDatabaseCount('placements', 0);
     }
 
     public function test_student_can_save_a_journal_draft_then_submit_it(): void
@@ -175,7 +170,8 @@ class StudentRecordsTest extends TestCase
 
         $this->get(route('student.attendance.index'))
             ->assertOk()
-            ->assertSee('12-10-2026');
+            ->assertViewHas('attendances', fn ($attendances) => $attendances->total() === 1)
+            ->assertSee('08:00 – 16:00');
     }
 
     public function test_guest_and_non_student_cannot_access_student_database_pages(): void

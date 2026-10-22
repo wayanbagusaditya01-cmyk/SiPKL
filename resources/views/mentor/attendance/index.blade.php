@@ -49,6 +49,7 @@
                         <th scope="col">Status</th>
                         <th scope="col">Jam masuk</th>
                         <th scope="col">Jam keluar</th>
+                        <th scope="col">Lokasi absen</th>
                         <th scope="col">Catatan</th>
                     </tr>
                 </thead>
@@ -60,10 +61,29 @@
                                 <strong>{{ $attendance->student->name ?? 'Siswa' }}</strong>
                                 <small class="muted">{{ $attendance->student->nis ?? '' }}</small>
                             </td>
-                            <td data-label="Status"><x-badge :status="$attendance->status"/></td>
+                            <td data-label="Status">
+                                <x-badge :status="$attendance->status"/>
+                                @if($attendance->late_minutes)<small class="muted" style="display: block; color: var(--error);">Terlambat {{ $attendance->late_minutes }} mnt</small>@endif
+                            </td>
                             <td data-label="Jam masuk">{{ $attendance->time_in ?: '—' }}</td>
                             <td data-label="Jam keluar">{{ $attendance->time_out ?: '—' }}</td>
-                            <td data-label="Catatan">{{ $attendance->note ?: '—' }}</td>
+                            <td data-label="Lokasi absen">
+                                @if($attendance->check_in_distance !== null)
+                                    <a href="https://www.google.com/maps?q={{ $attendance->check_in_latitude }},{{ $attendance->check_in_longitude }}" target="_blank" rel="noopener noreferrer">Masuk: {{ $attendance->check_in_distance }} m</a>
+                                    @if($attendance->check_out_distance !== null)
+                                        <br><a href="https://www.google.com/maps?q={{ $attendance->check_out_latitude }},{{ $attendance->check_out_longitude }}" target="_blank" rel="noopener noreferrer">Pulang: {{ $attendance->check_out_distance }} m</a>
+                                    @endif
+                                    <small class="muted" style="display: block;">dari titik tempat PKL</small>
+                                @else
+                                    —
+                                @endif
+                            </td>
+                            <td data-label="Catatan">
+                                {{ $attendance->note ?: '—' }}
+                                @if($attendance->leave_photo_path)
+                                    <a href="{{ asset('storage/'.$attendance->leave_photo_path) }}" target="_blank" rel="noopener noreferrer" style="display: block;">Lihat foto bukti</a>
+                                @endif
+                            </td>
                         </tr>
                     @endforeach
                 </tbody>

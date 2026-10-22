@@ -19,6 +19,7 @@ use App\Http\Controllers\Mentor\MentorDashboardController;
 use App\Http\Controllers\Mentor\MentorGradeController;
 use App\Http\Controllers\Mentor\MentorJournalController;
 use App\Http\Controllers\Mentor\MentorProfileController;
+use App\Http\Controllers\Mentor\MentorScheduleController;
 use App\Http\Controllers\Mentor\MentorStudentController;
 use App\Http\Controllers\PreviewController;
 use App\Http\Controllers\Student\AttendanceController;
@@ -86,7 +87,9 @@ Route::middleware(['auth', 'role:siswa'])->prefix('siswa')->name('student.')->gr
     Route::get('/pembina', [StudentPortalController::class, 'mentors'])->name('portal.mentors');
     Route::get('/nilai', [StudentPortalController::class, 'grade'])->name('portal.grade');
     Route::get('/absensi', [AttendanceController::class, 'index'])->name('attendance.index');
-    Route::post('/absensi', [AttendanceController::class, 'store'])->middleware('throttle:30,1')->name('attendance.store');
+    Route::post('/absensi/masuk', [AttendanceController::class, 'checkIn'])->middleware('throttle:30,1')->name('attendance.check-in');
+    Route::post('/absensi/pulang', [AttendanceController::class, 'checkOut'])->middleware('throttle:30,1')->name('attendance.check-out');
+    Route::post('/absensi/izin', [AttendanceController::class, 'leave'])->middleware('throttle:30,1')->name('attendance.leave');
     Route::get('/jurnal', [JournalController::class, 'index'])->name('journals.index');
     Route::post('/jurnal', [JournalController::class, 'store'])->middleware('throttle:20,1')->name('journals.store');
     Route::put('/jurnal/{journal}', [JournalController::class, 'update'])->name('journals.update');
@@ -113,4 +116,8 @@ Route::middleware(['auth', 'role:'.implode(',', User::MENTOR_ROLES)])->prefix('p
     Route::get('/profil', [MentorProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profil', [MentorProfileController::class, 'update'])->name('profile.update');
     Route::put('/profil/password', [MentorProfileController::class, 'updatePassword'])->name('profile.password');
+    Route::get('/jadwal', [MentorScheduleController::class, 'edit'])->name('schedule.edit');
+    Route::put('/jadwal', [MentorScheduleController::class, 'update'])->name('schedule.update');
+    Route::post('/jadwal/libur', [MentorScheduleController::class, 'storeHoliday'])->name('schedule.holidays.store');
+    Route::delete('/jadwal/libur/{holiday}', [MentorScheduleController::class, 'destroyHoliday'])->name('schedule.holidays.destroy');
 });

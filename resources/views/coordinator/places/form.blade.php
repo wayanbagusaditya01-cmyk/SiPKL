@@ -16,6 +16,7 @@
         <x-field name="address" label="Alamat lengkap" type="textarea" :value="$place?->address ?? ''" maxlength="3000"/>
         <x-field name="latitude" label="Latitude" type="number" :value="$place?->latitude ?? ''" step="any" min="-90" max="90"/>
         <x-field name="longitude" label="Longitude" type="number" :value="$place?->longitude ?? ''" step="any" min="-180" max="180"/>
+        <x-field name="attendance_radius" label="Radius absensi (meter)" type="number" :value="$place?->attendance_radius ?? 150" min="25" max="2000" step="1" required hint="Siswa hanya bisa absen masuk/pulang dalam jarak ini dari titik koordinat tempat PKL."/>
     </div>
     <div class="actions"><x-button type="submit">{{ $editing ? 'Simpan perubahan' : 'Simpan Tempat' }}</x-button><x-button variant="secondary" :href="route('coordinator.tempat.index')">Batal</x-button></div>
 </form></section>

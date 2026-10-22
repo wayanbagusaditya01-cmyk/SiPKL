@@ -340,11 +340,10 @@ class StudentOptionalFeaturesTest extends TestCase
             ->assertDontSee('Bagus')
             ->assertDontSee('Aditya Pratama');
 
-        $this->post(route('student.attendance.store'), [
+        $this->travelTo('2026-10-13 09:00');
+        $this->post(route('student.attendance.leave'), [
             'attendance_date' => '2026-10-12',
-            'status' => 'Hadir',
-            'time_in' => '08:00',
-            'time_out' => '16:00',
+            'note' => 'Sakit demam.',
         ])->assertRedirect(route('student.attendance.index'));
 
         $this->post(route('student.journals.store'), [
@@ -364,7 +363,7 @@ class StudentOptionalFeaturesTest extends TestCase
 
         $this->get(route('student.attendance.index'))
             ->assertOk()
-            ->assertDontSee('12-10-2026');
+            ->assertDontSee('Sakit demam.');
 
         $this->get(route('student.journals.index'))
             ->assertOk()

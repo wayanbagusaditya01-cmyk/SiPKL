@@ -117,5 +117,15 @@ if (mentorType) {
     }
     mentorType.addEventListener('change',updateMentorType); updateMentorType();
 }
+one('[data-use-location]')?.addEventListener('click', event => {
+    const button = event.currentTarget, status = one('[data-use-location-status]'), form = button.closest('form');
+    if (!window.isSecureContext || !('geolocation' in navigator)) { status.textContent = 'Lokasi hanya bisa dibaca melalui HTTPS di browser yang mendukung.'; return; }
+    button.disabled = true; status.textContent = 'Membaca lokasi…';
+    navigator.geolocation.getCurrentPosition(position => {
+        one('[name="latitude"]', form).value = position.coords.latitude.toFixed(7);
+        one('[name="longitude"]', form).value = position.coords.longitude.toFixed(7);
+        status.textContent = `Lokasi terisi (akurasi ±${Math.round(position.coords.accuracy)} m). Simpan untuk menerapkan.`; button.disabled = false;
+    }, () => { status.textContent = 'Lokasi gagal dibaca. Izinkan akses lokasi lalu coba lagi.'; button.disabled = false; }, { enableHighAccuracy: true, timeout: 20000 });
+});
 window.addEventListener('pageshow', event => { if (event.persisted) location.reload(); });
 

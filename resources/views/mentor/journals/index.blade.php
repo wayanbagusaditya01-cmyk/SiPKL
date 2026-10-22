@@ -83,9 +83,10 @@
                 @endif
 
                 @if($selected->documentation_path)
-                    <div style="margin-top: 8px;">
-                        <a href="{{ asset('storage/' . $selected->documentation_path) }}" target="_blank" rel="noopener noreferrer" style="display: inline-flex; align-items: center; gap: 4px; color: var(--primary); font-weight: 500;">
-                            <x-icon name="file" style="width: 14px; height: 14px;"/> Lihat file dokumentasi
+                    <div style="margin-top: 12px;">
+                        <h3 style="font-size: 0.85em; color: var(--text-secondary); margin-bottom: 6px;">Foto dokumentasi</h3>
+                        <a href="{{ asset('storage/' . $selected->documentation_path) }}" target="_blank" rel="noopener noreferrer">
+                            <img src="{{ asset('storage/' . $selected->documentation_path) }}" alt="Foto dokumentasi jurnal {{ $selected->title }}" loading="lazy" style="display: block; max-width: 100%; max-height: 280px; border-radius: 8px; border: 1px solid var(--border); object-fit: cover;">
                         </a>
                     </div>
                 @endif
