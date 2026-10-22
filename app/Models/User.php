@@ -83,6 +83,7 @@ class User extends Authenticatable
 
         if ($existing) {
             $existing->update(['user_id' => $this->id]);
+            $this->setRelation('student', $existing);
 
             return $existing;
         }
@@ -93,13 +94,16 @@ class User extends Authenticatable
             $nextNis = (string) ((int) $nextNis + 1);
         }
 
-        return $this->student()->create([
+        $student = $this->student()->create([
             'nis' => $nextNis,
             'name' => $this->name,
             'class' => 'XII RPL 1',
             'major' => 'Rekayasa Perangkat Lunak',
             'email' => $this->email,
         ]);
+        $this->setRelation('student', $student);
+
+        return $student;
     }
 
     public function mentor(): HasOne

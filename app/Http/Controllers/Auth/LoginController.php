@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
-use App\Models\Student;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -16,26 +15,10 @@ class LoginController extends Controller
 {
     public function create(): View|RedirectResponse
     {
-        if (Auth::check() && config('preview.enabled') && app()->environment(['local', 'testing'])) {
-            $user = Auth::user();
+        $user = Auth::user();
 
-            if ($user instanceof User && $user->role === 'admin') {
-                return redirect()->route('admin.dashboard');
-            }
-
-            if ($user instanceof User && $user->role === 'siswa' && $user->student()->exists()) {
-                return redirect()->route('student.portal.dashboard');
-            }
-
-            if ($user instanceof User && $user->role === 'koordinator') {
-                return redirect()->route('coordinator.dashboard');
-            }
-
-            if ($user instanceof User && $user->isMentor()) {
-                return redirect()->route('mentor.dashboard');
-            }
-
-            return redirect()->route('preview.page', ['role' => $user->role, 'page' => 'dashboard']);
+        if ($user instanceof User && $user->status && $this->homeRouteFor($user) !== null) {
+            return redirect()->route($this->homeRouteFor($user));
         }
 
         return view('preview.login');
@@ -59,7 +42,9 @@ class LoginController extends Controller
         $request->session()->regenerate();
         $user = Auth::user();
 
-        if (! array_key_exists($user->role, config('preview.roles')) && ! $user->isMentor()) {
+        $homeRoute = $this->homeRouteFor($user);
+
+        if ($homeRoute === null) {
             Auth::logout();
             $request->session()->invalidate();
             $request->session()->regenerateToken();
@@ -76,38 +61,28 @@ class LoginController extends Controller
             $user
         );
 
-        if ($user->role === 'admin') {
-            return redirect()->route('admin.dashboard');
-        }
-
         if ($user->role === 'siswa') {
-            if (! $user->student()->exists()) {
-                $existing = Student::whereNull('user_id')
-                    ->where(function ($query) use ($user): void {
-                        $query->where('email', $user->email)
-                            ->orWhere('name', $user->name);
-                    })
-                    ->first();
-
-                if ($existing) {
-                    $existing->update(['user_id' => $user->id]);
-                }
-            }
-
-            if ($user->student()->exists()) {
-                return redirect()->route('student.portal.dashboard');
-            }
+            $user->ensureStudent();
         }
 
-        if ($user->role === 'koordinator') {
-            return redirect()->route('coordinator.dashboard');
-        }
+        return redirect()->route($homeRoute);
+    }
 
+    /**
+     * Halaman awal portal database untuk setiap peran, atau null bila peran tidak dikenal.
+     */
+    private function homeRouteFor(User $user): ?string
+    {
         if ($user->isMentor()) {
-            return redirect()->route('mentor.dashboard');
+            return 'mentor.dashboard';
         }
 
-        return redirect()->route('preview.page', ['role' => $user->role, 'page' => 'dashboard']);
+        return match ($user->role) {
+            'admin' => 'admin.dashboard',
+            'koordinator' => 'coordinator.dashboard',
+            'siswa' => 'student.portal.dashboard',
+            default => null,
+        };
     }
 
     public function destroy(Request $request): RedirectResponse

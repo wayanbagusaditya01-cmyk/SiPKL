@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Student;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -26,14 +27,30 @@ class LoginTest extends TestCase
         $this->get('/register')->assertNotFound();
     }
 
-    public function test_student_login_redirects_to_student_dashboard(): void
+    public function test_student_without_profile_logs_into_the_database_portal_with_preview_disabled(): void
     {
+        config(['preview.enabled' => false]);
         $student = User::factory()->create(['email' => 'murid@sekolah.test', 'password' => 'rahasia', 'role' => 'siswa']);
 
         $this->post(route('login.store'), ['email' => $student->email, 'password' => 'rahasia'])
-            ->assertRedirect(route('preview.page', ['role' => 'siswa', 'page' => 'dashboard']));
+            ->assertRedirect(route('student.portal.dashboard'));
 
         $this->assertAuthenticatedAs($student);
+        $this->assertTrue($student->student()->exists());
+        $this->get(route('student.portal.dashboard'))->assertOk();
+        $this->get(route('login'))->assertRedirect(route('student.portal.dashboard'));
+    }
+
+    public function test_student_login_links_an_existing_unlinked_student_record_by_email(): void
+    {
+        $student = User::factory()->create(['email' => 'murid@sekolah.test', 'password' => 'rahasia', 'role' => 'siswa']);
+        $record = Student::factory()->create(['user_id' => null, 'email' => 'murid@sekolah.test', 'nis' => '2026777']);
+
+        $this->post(route('login.store'), ['email' => $student->email, 'password' => 'rahasia'])
+            ->assertRedirect(route('student.portal.dashboard'));
+
+        $this->assertSame($student->id, $record->fresh()->user_id);
+        $this->assertSame(1, Student::count());
     }
 
     public function test_teacher_login_redirects_to_teacher_dashboard(): void
